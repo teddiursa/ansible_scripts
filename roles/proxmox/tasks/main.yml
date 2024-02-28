@@ -1,0 +1,51 @@
+---
+# Create container with provided os image and variables.
+# Checks if a container with the provided vmid is already created or not
+
+- name: Check if already created
+  ansible.builtin.command:
+    cmd: pvesh get /cluster/nextid -vmid "{{ vmid }}"
+  register: vm_status
+  changed_when: false
+  ignore_errors: true
+  failed_when: "vm_status.rc != 0 and 'already exists' not in vm_status.stderr"
+
+- name: Print message if VM id already exists
+  ansible.builtin.debug:
+    msg: "VM with ID {{ vmid }} already exists"
+  when: vm_status.rc != 0 and 'already exists' in vm_status.stderr
+
+- name: Create new container with network address
+  community.general.proxmox:
+    vmid: "{{ vmid }}"
+    hostname: "{{ hostname }}"
+    node: pve
+    api_user: root@pam
+    api_password: "{{ api_password }}"
+    api_host: 127.0.0.1
+    password: "{{ api_password }}"
+    api_token_id: "{{ api_token_id }}"
+    api_token_secret: "{{ api_token_secret }}"
+    ostemplate: "{{ ostemplate }}"
+    validate_certs: false
+    storage: "{{ storage }}"
+    disk: "{{ disk }}"
+    cpus: "{{ cpus }}"
+    cores: "{{ cores }}"
+    memory: "{{ memory }}"
+    netif: "{{ ip }}"
+    description: "{{ description }}"
+    pubkey: "{{ public_key }}"
+    force: true
+    onboot: "{{ boot }}"
+    features: "{{ features }}"
+    unprivileged: "{{ unprivileged }}"
+  when: vm_status.rc == 0 and 'already exists' not in vm_status.stderr
+
+- name: Start container
+  community.general.proxmox:
+    vmid: "{{ vmid }}"
+    api_host: 127.0.0.1
+    api_user: ansible@pam
+    api_password: "{{ api_password }}"
+    state: started

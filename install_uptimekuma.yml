@@ -1,0 +1,103 @@
+---
+
+# Installs and runs uptime-kuma: https://github.com/louislam/uptime-kuma
+# Checks for installation of npm, n, and pm2 to prevent unnessary installations.
+# Checks if uptime-kuma is already running before starting it.
+
+- name: Update servers
+  hosts: all
+  become: true
+  tasks:
+    - name: Run updates
+      tags: always
+      ansible.builtin.apt:
+        update_cache: true
+      when: ansible_distribution == ["Debian", Ubuntu]
+
+- name: Install Uptime Kuma
+  hosts: test
+  become: true
+  tasks:
+    - name: Check for npm
+      tags: Debian,utk
+      ansible.builtin.stat:
+        path: /usr/local/bin/npm
+      register: npm_installed
+
+    - name: Install npm
+      tags: Debian,utk
+      ansible.builtin.apt:
+        name: npm
+      register: install_npm
+      when: not npm_installed.stat.exists
+
+    - name: Check for n
+      tags: Debian,utk
+      ansible.builtin.stat:
+        path: /usr/local/bin/n
+      register: n_installed
+
+    - name: Install n
+      tags: Debian,utk
+      ansible.builtin.command:
+        cmd: npm install -g n
+      register: install_n
+      changed_when: true
+      when: not n_installed.stat.exists
+
+    - name: Update node
+      tags: Debian,utk
+      ansible.builtin.command:
+        cmd: n stable
+      changed_when: true
+
+    - name: Check for n
+      tags: Debian,utk
+      ansible.builtin.stat:
+        path: /usr/local/bin/pm2
+      register: pm2_installed
+
+    - name: Install pm2
+      tags: Debian,utk
+      ansible.builtin.command:
+        cmd: npm install pm2 -g
+      changed_when: true
+      when: not pm2_installed.stat.exists
+
+    - name: Install git
+      tags: Debian,utk
+      ansible.builtin.apt:
+        name: git
+        state: present
+
+    - name: Clone git repo
+      tags: Debian,utk
+      ansible.builtin.git:
+        repo: https://github.com/louislam/uptime-kuma.git
+        dest: /opt/uptime-kuma
+        version: 1.23.11
+      register: cloned_git
+
+    - name: Setup utk
+      tags: Debian,utk
+      ansible.builtin.command:
+        chdir: /opt/uptime-kuma
+        cmd: npm run setup
+      register: setup_utk
+      changed_when: true
+
+    - name: Get utk status
+      tags: Debian,utk
+      ansible.builtin.shell:
+        cmd: pm2 l | grep uptime-kuma
+      register: utk_status
+      changed_when: false
+      ignore_errors: true
+
+    - name: Start utk
+      tags: Debian,utk
+      ansible.builtin.command:
+        chdir: /opt/uptime-kuma
+        cmd: pm2 start server/server.js --name uptime-kuma
+      changed_when: true
+      when: vm_status.rc is not 0

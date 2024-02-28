@@ -1,0 +1,17 @@
+---
+# Executes a command inside a container, then restarts the container
+
+- name: Execute command in container
+  community.docker.docker_container_exec:
+    container: "{{ container_name }}"
+    command: "{{ cmd }}"
+
+- name: Stop container
+  community.docker.docker_container:
+    name: "{{ container_name }}"
+    state: stopped
+    
+- name: Restart container
+  community.docker.docker_container:
+    name: "{{ container_name }}"
+    state: started

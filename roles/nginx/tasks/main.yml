@@ -1,0 +1,67 @@
+---
+# Role to install Nginx since it uses docker compose
+# Restores back up volumes to keep settings
+# Relatively hard coded
+
+- name: Make nginx dir
+  ansible.builtin.file:
+    path: /home/ansible/nginx
+    state: directory
+    owner: ansible
+    group: ansible
+    mode: '0644'
+
+- name: Copy config file
+  ansible.builtin.template:
+    src: ~/ansible_proxmox/roles/nginx/templates/docker-compose.j2
+    dest: /home/ansible/nginx/docker-compose.yml
+    owner: ansible
+    group: ansible
+    mode: '0644'
+  changed_when: true
+
+- name: Start Nginx with docker Compose
+  ansible.builtin.command:
+    chdir: /home/ansible/nginx
+    cmd: docker compose up -d
+  changed_when: true
+
+- name: Stop container to load backup
+  ansible.builtin.command:
+    chdir: /home/ansible/nginx
+    cmd: docker compose down
+  changed_when: true
+
+- name: Remove old container volume data
+  ansible.builtin.file:
+    path: '/home/ansible/nginx/data'
+    state: absent
+
+- name: Remove old container volume lets encrypt
+  ansible.builtin.file:
+    path: '/home/ansible/nginx/letsencrypt'
+    state: absent
+
+- name: Install tar
+  ansible.builtin.apt:
+    name: tar
+
+# Hard coded file names
+
+- name: Unzip container backup data
+  ansible.builtin.unarchive:
+    src: '/home/greg/ansible_proxmox/roles/nginx/files/data.tar'
+    dest: '/home/ansible/nginx'
+  changed_when: true
+
+- name: Unzip container backup data
+  ansible.builtin.unarchive:
+    src: '/home/greg/ansible_proxmox/roles/nginx/files/letsencrypt.tar'
+    dest: '/home/ansible/nginx'
+  changed_when: true
+
+- name: Restart container
+  ansible.builtin.command:
+    chdir: /home/ansible/nginx
+    cmd: docker compose up -d
+  changed_when: true

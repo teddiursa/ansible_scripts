@@ -1,0 +1,7 @@
+---
+# Generic install role
+
+- name: Install {{ package_name }}
+  ansible.builtin.package:
+    name: "{{ package_name }}"
+    state: "{{ package_state }}"

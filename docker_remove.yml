@@ -1,0 +1,8 @@
+- name: Delete LXC
+  hosts: proxmox
+  become: true
+  roles:
+    - remove
+  vars:
+    loop_list:
+      - 550

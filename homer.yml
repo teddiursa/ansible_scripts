@@ -1,0 +1,50 @@
+---
+
+# Creates homer LXC using homer role
+# https://github.com/bastienwirtz/homer
+
+# Homer IP is hard coded as "homer" inventory role and below
+# Would need to change vmid and ips for other containers
+
+- name: Create LXC for homer
+  hosts: proxmox
+  become: true
+  vars:
+    hostname: homer
+    vmid: 509
+    ip: '{"net0":"name=eth0,bridge=vmbr0,ip=192.168.55.9/24,gw=192.168.55.1"}'
+    ostemplate: "local:vztmpl/debian-11-standard_11.7-1_amd64.tar.zst"
+    storage: nvme
+    disk: 'nvme:8'
+    cpus: 1
+    cores: 1
+    memory: 1024
+    boot: true
+    description: 'Homer Dashboard made by ansible'
+    features: null
+    unprivileged: true
+  roles:
+    - proxmox
+
+- name: Install ansible user
+  hosts: homer
+  remote_user: root
+  gather_facts: false
+  roles:
+    - bootstrap
+
+- name: Install unzip
+  hosts: docker
+  gather_facts: false
+  vars:
+    package_name: unzip
+    package_state: present
+  roles:
+    - install
+
+
+- name: Install homer
+  hosts: homer
+  gather_facts: false
+  roles:
+    - homer

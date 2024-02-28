@@ -1,0 +1,85 @@
+---
+# Installs docker and needed packages
+# Disables IPv6
+
+- name: Install needed packages
+  ansible.builtin.apt:
+    name:
+      - ca-certificates
+      - curl
+      - gpg
+      - python3
+    update_cache: true
+    autoclean: true
+
+- name: Change permissions of keyrings
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Install add Docker repository
+  ansible.builtin.command:
+    install -m 0755 -d /etc/apt/keyrings
+  changed_when: true
+
+- name: Install Docker GPG key
+  ansible.builtin.get_url:
+    dest: /etc/apt/keyrings/docker.asc
+    url: https://download.docker.com/linux/debian/gpg
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Change permissions of docker gpg key
+  ansible.builtin.file:
+    path: /etc/apt/keyrings/docker.asc
+    owner: root
+    group: root
+    mode: a+r
+
+- name: Add Docker repository to Apt sources
+  ansible.builtin.apt_repository:
+    install_python_apt: true
+    repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bullseye stable"
+    state: present
+    filename: docker
+    update_cache: true
+
+- name: Update Apt package cache
+  ansible.builtin.apt:
+    update_cache: true
+
+- name: Install other docker packages
+  ansible.builtin.apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+
+- name: Disable ipv6
+  ansible.builtin.copy:
+    content: |
+      {
+        "ipv6": false
+      }
+    dest: /etc/docker/daemon.json
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Create docker network
+  community.docker.docker_network:
+    name: bridge
+    enable_ipv6: false
+    driver: bridge
+
+- name: Restart docker
+  ansible.builtin.systemd_service:
+    state: restarted
+    daemon_reload: true
+    name: docker

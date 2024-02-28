@@ -1,0 +1,58 @@
+---
+# Creates user for ansible and generic greg user
+# Adds them to sudo and also adds ssh key for ansible
+
+- name: Wait for connection
+  ansible.builtin.wait_for_connection:
+    delay: 15
+    timeout: 300
+
+- name: Set vault file
+  ansible.builtin.include_vars:
+    file: group_vars/bootstrap.yml
+
+- name: Install sudo
+  ansible.builtin.apt:
+    name: sudo
+
+- name: Generate hashed password
+  ansible.builtin.set_fact:
+    hashed_password: "{{ api_password | password_hash('sha512') }}"
+
+- name: Create user ansible
+  ansible.builtin.user:
+    name: ansible
+    groups: root
+    shell: /bin/bash
+    create_home: true
+    password: "{{ hashed_password }}"
+
+- name: Add ssh key for test ansible
+  ansible.posix.authorized_key:
+    user: ansible
+    key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINOJj6Bi27ocohN68teE3yeu5ABXGbdxxySwiFvnOqiB ansible"
+
+- name: Add sudoers file for ansible user
+  ansible.builtin.copy:
+    src: sudoer_ansible
+    dest: /etc/sudoers.d/ansible
+    owner: root
+    group: root
+    mode: '0440'
+
+- name: Create user greg
+  ansible.builtin.user:
+    name: greg
+    groups: root
+    shell: /bin/bash
+    create_home: true
+    password: "{{ hashed_password }}"
+
+
+- name: Add sudoers file for greg
+  ansible.builtin.copy:
+    src: sudoer_greg
+    dest: /etc/sudoers.d/ansible
+    owner: root
+    group: root
+    mode: '0440'

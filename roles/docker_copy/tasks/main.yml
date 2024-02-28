@@ -1,0 +1,26 @@
+---
+# Generic copy file to a docker container role
+
+- name: Copy file to docker tmp dir
+  ansible.builtin.copy:
+    src: "{{ source }}"
+    dest: /tmp/{{ container }}
+    owner: "{{ owner }}"
+    group: "{{ group }}"
+    mode: "{{ mode }}"
+
+- name: Copy file to container
+  community.docker.docker_container_copy_into:
+    container: "{{ container }}"
+    path: /tmp/{{ container }}
+    container_path: "{{ destination }}"
+
+- name: Restart container
+  community.docker.docker_container:
+    name: "{{ container }}"
+    state: started
+    restart: true
+- name: Remove tmp file
+  ansible.builtin.file:
+    path: /tmp/{{ container }}
+    state: absent

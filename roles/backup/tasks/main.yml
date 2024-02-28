@@ -1,0 +1,64 @@
+---
+# Uses type variable to determine if it's a file or folder and if it's on a docker container 
+
+- name: Backup Docker file
+  block:
+  - name: Copy file from Docker container to temporary directory
+    ansible.builtin.shell: "docker cp {{ container_name }}:{{ source }} /tmp"
+
+  - name: Move file from temporary directory to destination
+    ansible.builtin.fetch:
+      src: "/tmp/{{ source | basename }}"
+      dest: "{{ destination }}"
+      flat: true
+  when: type == 'docker_file'
+
+- name: Backup Docker Folder
+  block:
+  - name: Create tarball of directory in Docker container
+    community.docker.docker_container_exec:
+      container: "{{ container_name }}"
+      command: "tar -czf /tmp/folder.tar -C {{ source }} ."
+
+  - name: Copy tarball from Docker container to temporary directory
+    ansible.builtin.shell: "docker cp {{ container_name }}:/tmp/folder.tar /tmp"
+
+  - name: Extract tarball to destination
+    ansible.builtin.fetch:
+      src: "/tmp/folder.tar"
+      dest: "{{ destination }}"
+      flat: true
+
+  - name: Clean up temporary directory
+    ansible.builtin.file:
+      path: "/tmp/folder.tar"
+      state: absent
+  when: type == 'docker_folder'
+
+
+- name: Backup file
+  block:
+  - name: Fetch file from remote host to local machine
+    ansible.builtin.fetch:
+      src: "{{ source }}"
+      dest: "{{ destination }}"
+      flat: yes
+    when: type == 'file'
+
+- name: Backup Folder
+  block:
+  - name: Archive the Remote directory
+    ansible.builtin.command:
+      cmd: tar -czf /tmp/{{ tar_name }} -C {{ source }} {{ folder_name }}
+
+  - name: Copy Archive
+    ansible.builtin.fetch:
+      src: /tmp/{{ tar_name }}
+      dest: "{{ destination}}"
+      flat: true
+
+  - name: Remove temporary archive on localhost
+    ansible.builtin.file:
+      path: /tmp/{{ tar_name }}
+      state: absent
+  when: type == 'folder'

@@ -1,0 +1,12 @@
+TODO
+.vscode
+.ansible-lint
+group_vars/
+*.tar
+*.zip
+*.png
+*.svg
+*.db
+*.ini
+
+prometheus.yml

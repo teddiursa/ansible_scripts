@@ -1,0 +1,36 @@
+---
+# Adds a nas using variables for nas credentials and path
+# Makes a nas credentials file and mounts using cifs
+# Mounts to mnt/share
+
+- name: Install cifs-utils
+  ansible.builtin.package:
+    name: cifs-utils
+
+- name: Make mount directory
+  ansible.builtin.file:
+    path: /mnt/share
+    state: directory
+    owner: ansible
+    group: ansible
+    mode: '0766'
+
+- name: Copy nas credentials file
+  tags: nas
+  ansible.builtin.template:
+    src: nas_credentials.j2
+    dest: /etc/nas_credentials
+    owner: root
+    group: root
+    mode: '0600'
+  vars:
+    nas_user: "{{ nas_username }}"
+    nas_pass: "{{ nas_password }}"
+
+- name: Mount the CIFS share
+  ansible.posix.mount:
+    path: /mnt/share
+    src: "{{ nas_path }}"
+    fstype: cifs
+    opts: "credentials=/etc/nas_credentials,file_mode=0766,dir_mode=0766,uid=ansible,gid=ansible"
+    state: mounted

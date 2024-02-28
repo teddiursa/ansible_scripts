@@ -1,0 +1,101 @@
+---
+# Installs plexmedia server and restores backup to keep settings
+# Includes adding a plex user/group, installing repo for updates, and rescanning library files
+
+- name: Create group plex
+  ansible.builtin.group:
+    name: plex
+
+- name: Create user plex
+  ansible.builtin.user:
+    name: plex
+    groups: plex
+
+- name: Install plex .deb
+  ansible.builtin.apt:
+    deb: https://downloads.plex.tv/plex-media-server-new/1.32.8.7639-fb6452ebf/debian/plexmediaserver_1.32.8.7639-fb6452ebf_amd64.deb
+  register: plex_installed
+
+- name: Start plex service
+  ansible.builtin.service:
+    name: plexmediaserver
+    state: started
+  when: plex_installed.changed
+
+- name: Stop plex service
+  ansible.builtin.service:
+    name: plexmediaserver
+    state: stopped
+  when: plex_installed.changed
+
+- name: Remove old data
+  ansible.builtin.file:
+    path: '/var/lib/plexmediaserver'
+    state: absent
+  when: plex_installed.changed
+
+- name: Install gzip and gpg 
+  ansible.builtin.apt:
+    name: 
+      - gzip
+      - gnupg
+
+# Only restores backup when first installed
+# Rather large file, even withouth cached folder
+- name: Unzip config data
+  ansible.builtin.unarchive:
+    src: '/home/greg/ansible_proxmox/roles/plex/files/plex.tar'
+    dest: '/var/lib'
+    extra_opts: --format=posix
+  changed_when: true
+  when: plex_installed.changed
+
+- name: Unmount previous CIFS share
+  ansible.posix.mount:
+    path: /mnt/share
+    state: unmounted
+
+- name: Remount the CIFS share
+  ansible.posix.mount:
+    path: /mnt/share
+    src: "//192.168.55.3/plex"
+    fstype: cifs
+    opts: "credentials=/etc/nas_credentials,file_mode=0766,dir_mode=0766,uid=plex,gid=plex"
+    state: mounted
+
+- name: Start plex service
+  ansible.builtin.service:
+    name: plexmediaserver
+    state: started
+    enabled: true
+
+- name: Enable Plex repo
+  ansible.builtin.copy:
+    src: /home/greg/ansible_proxmox/roles/plex/files/repo.j2
+    dest: /etc/apt/sources.list.d/plexmediaserver.list
+
+- name: Import PlexSign.key
+  ansible.builtin.apt_key:
+    url: "https://downloads.plex.tv/plex-keys/PlexSign.key"
+    state: present
+
+- name: Update package cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 86400  # One day
+
+- name: Upgrade packages
+  ansible.builtin.apt:
+    upgrade: true
+
+- name: Refresh shows library
+  ansible.builtin.uri:
+    url: "http://localhost:32400/library/sections/1/refresh?X-Plex-Token={{ token }}"
+    method: GET
+    status_code: 200
+
+- name: Refresh movies libraries
+  ansible.builtin.uri:
+    url: "http://localhost:32400/library/sections/2/refresh?X-Plex-Token={{ token }}"
+    method: GET
+    status_code: 200

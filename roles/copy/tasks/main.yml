@@ -1,0 +1,11 @@
+---
+# Generic copy role 
+# Allows for remote or local sources using mode variable
+
+- name: Copy file with owner and permissions
+  ansible.builtin.copy:
+    src: "{{ source }}"
+    dest: "{{ destination }}"
+    owner: "{{ owner }}"
+    group: "{{ group }}"
+    mode: "{{ mode }}"

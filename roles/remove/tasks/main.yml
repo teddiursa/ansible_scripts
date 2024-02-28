@@ -1,0 +1,22 @@
+---
+# Generic remove container role
+# Uses a "loop_list" variable to stop multiple containers if needed
+
+- name: Stop Container with force
+  community.general.proxmox:
+    vmid: "{{ item }}"
+    api_host: 127.0.0.1
+    api_user: ansible@pam
+    api_password: "{{ api_password }}"
+    state: stopped
+    force: true
+  loop: "{{ loop_list }}"
+
+- name: Remove Container
+  community.general.proxmox:
+    vmid: "{{ item }}"
+    api_host: 127.0.0.1
+    api_user: ansible@pam
+    api_password: "{{ api_password }}"
+    state: absent
+  loop: "{{ loop_list }}"

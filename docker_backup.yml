@@ -1,0 +1,94 @@
+---
+# Backs up current docker container files
+# WARNING: WILL DELETE PREVIOUS BACKUP FILES
+
+# Has tags if you just want to backup certain container
+
+- name: Back up nginx lets encrypt
+  hosts: docker
+  vars:
+    source: '/home/ansible/nginx'
+    destination: '/home/greg/ansible_proxmox/roles/nginx/files/'
+    tar_name: letsencrypt.tar
+    folder_name: letsencrypt
+    container_name: ''
+    type: folder
+  roles:
+    - backup
+  tags: nginx
+  
+- name: Back up nginx data
+  hosts: docker
+  vars:
+    source: '/home/ansible/nginx'
+    destination: '/home/greg/ansible_proxmox/roles/nginx/files/'
+    tar_name: data.tar
+    folder_name: data
+    container_name: ''
+    type: folder
+  roles:
+    - backup
+  tags: nginx
+  
+- name: Backup grafana db
+  hosts: docker
+  vars: 
+    container_name: grafana
+    destination: /home/greg/ansible_proxmox/roles/docker_container/files/grafana.db
+    source: /var/lib/grafana/grafana.db
+    tar_name: ''
+    folder_name: ''
+    type: docker_file
+  roles:
+    - backup
+  tags: grafana
+
+- name: Backup grafana ini
+  hosts: docker
+  vars: 
+    container_name: grafana
+    destination: /home/greg/ansible_proxmox/roles/docker_container/files/grafana.ini
+    source: /etc/grafana/grafana.ini
+    tar_name: ''
+    folder_name: ''
+    type: docker_file
+  roles:
+    - backup
+  tags: grafana
+
+- name: Backup prometheus.yml
+  hosts: docker
+  vars: 
+    destination: /home/greg/ansible_proxmox/roles/docker_container/files/prometheus.yml
+    source: /opt/prometheus.yml
+    tar_name: ''
+    folder_name: ''
+    container_name: ''
+    type: file
+  roles:
+    - backup
+  tags: prometheus
+
+- name: Back up UTK folder
+  hosts: docker
+  vars:
+    destination: /home/greg/ansible_proxmox/roles/docker_container/files/
+    source: /var/lib/docker/volumes
+    tar_name: utk.tar
+    folder_name: uptime-kuma
+    container_name: ''
+    type: folder
+  roles:
+    - backup
+  tags: utk
+
+
+# - name: Back up plex
+#   hosts: docker
+#   vars:
+#     source: '/var/lib'
+#     destination: '/home/greg/ansible_proxmox/roles/plex/files/plex.tar'
+#     tar_name: plex.tar
+#     folder_name: plexmediaserver
+#   roles:
+#     - backup_folder

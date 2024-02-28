@@ -1,0 +1,32 @@
+---
+
+- name: Update servers
+  hosts: all
+  become: true
+  tasks:
+    - name: Run updates
+      tags: always
+      ansible.builtin.apt:
+        update_cache: true
+      when: ansible_distribution == [Debian, Ubuntu]
+
+- name: Set up server for ansible
+  hosts: all
+  become: true
+  tasks:
+    - name: Create user ansible
+      ansible.builtin.user:
+        name: ansible
+        groups: root
+    - name: Add ssh key for test ansible
+      ansible.posix.authorized_key:
+        user: ansible
+        key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINOJj6Bi27ocohN68teE3yeu5ABXGbdxxySwiFvnOqiB ansible"
+        # pub key
+    - name: Add sudoers file for ansible user
+      ansible.builtin.copy:
+        src: sudoer_ansible
+        dest: /etc/sudoers.d/ansible
+        owner: root
+        group: root
+        mode: '0440'

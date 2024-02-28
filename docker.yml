@@ -1,0 +1,154 @@
+---
+
+# Creates docker container, installs docker containers, and load their backups.
+# NOTE: requires root for LXC options needs for docker
+
+- name: Create LXC for docker
+  hosts: proxmox
+  vars:
+    hostname: dockerAnsible
+    vmid: 550
+    ip: '{"net0":"name=eth0,bridge=vmbr0,ip=192.168.55.50/24,gw=192.168.55.1"}'
+    ostemplate: "local:vztmpl/debian-11-standard_11.7-1_amd64.tar.zst"
+    storage: nvme
+    disk: 'nvme:8'
+    cpus: 1
+    cores: 1
+    memory: 2048
+    boot: true
+    description: 'Docker host made by ansible'
+    unprivileged: true
+    features:
+      - nesting=1
+      - keyctl=1
+  roles:
+    - proxmox
+
+- name: Install ansible user
+  hosts: docker
+  remote_user: root
+  gather_facts: false
+  roles:
+    - bootstrap
+
+- name: Install unzip
+  hosts: docker
+  gather_facts: false
+  vars:
+    package_name: unzip
+    package_state: present
+  roles:
+    - install
+
+- name: Install docker
+  hosts: docker
+  gather_facts: false
+  roles:
+    - docker_host
+
+
+- name: Install uptime-kuma container
+  hosts: docker
+  vars:
+    image: louislam/uptime-kuma
+    image_tag: 1
+    container_name: uptime-kuma
+    container_ports: 3001:3001
+    container_host_group:
+    network_name: bridge
+    container_command: null
+    volumes:
+      uptime-kuma: "/app/data"
+    container_env: {}
+    container_workdir:
+    archive_name: 'utk.tar'
+  roles:
+    - docker_container
+
+- name: Install Nginx proxy manager using docker compose
+  hosts: docker
+  roles:
+    - nginx
+
+- name: Copy prometheus.yml file
+  hosts: docker
+  vars:
+    source: ~/ansible_proxmox/roles/docker_container/files/prometheus.yml
+    destination: "/opt/prometheus.yml"
+    owner: ansible
+    group: ansible
+    mode: '0644'
+    remote: false
+  roles:
+    - copy
+
+- name: Install prometheus container with prometheus.yml file
+  hosts: docker
+  vars:
+    image: prom/prometheus
+    image_tag: latest
+    container_name: prometheus
+    container_ports: 9090:9090
+    container_host_group:
+    network_name: bridge
+    container_command: null
+    volumes:
+      /opt/prometheus.yml: "/etc/prometheus/prometheus.yml"
+    container_env: {}
+    container_workdir:
+  roles:
+    - docker_container
+
+
+- name: Install grafana
+  hosts: docker
+  vars:
+    image: grafana/grafana-enterprise
+    image_tag:
+    container_name: grafana
+    container_ports: 3000:3000
+    container_host_group:
+    network_name: bridge
+    container_command: null
+    volumes: {}
+    container_env: {}
+    container_workdir:
+  roles:
+    - docker_container
+
+- name: Copy grafana.ini file
+  hosts: docker
+  vars:
+    container: 'grafana'
+    source: /home/greg/ansible_proxmox/roles/docker_container/files/grafana.ini
+    destination: "/etc/grafana/grafana.ini"
+    owner: ansible
+    group: ansible
+    mode: '0644'
+  roles:
+    - docker_copy
+
+- name: Copy grafana.db file
+  hosts: docker
+  vars:
+    container: 'grafana'
+    source: /home/greg/ansible_proxmox/roles/docker_container/files/grafana.db
+    destination: "/var/lib/grafana/grafana.db"
+    owner: ansible
+    group: ansible
+    mode: '0644'
+  roles:
+    - docker_copy
+
+- name: Install grafana plugins
+  hosts: docker
+  vars: 
+    container_name: grafana
+    cmd: 'grafana cli plugins install grafana-github-datasource'
+  roles:
+    - docker_run
+
+- name: Install node exporter
+  hosts: docker
+  roles:
+    - prometheus.prometheus.node_exporter
