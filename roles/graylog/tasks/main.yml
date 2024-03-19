@@ -1,0 +1,86 @@
+---
+
+- name: Set vault file
+  ansible.builtin.include_vars:
+    file: group_vars/proxmox.yml
+
+- name: Make graylog dir
+  ansible.builtin.file:
+    path: /home/ansible/graylog
+    state: directory
+    owner: ansible
+    group: ansible
+    mode: '0644'
+
+- name: Copy config file
+  ansible.builtin.template:
+    src: ~/ansible_proxmox/roles/graylog/templates/graylog.j2
+    dest: /home/ansible/graylog/docker-compose.yml
+    owner: ansible
+    group: ansible
+    mode: '0644'
+  changed_when: true
+
+- name: Start graylog with docker compose
+  ansible.builtin.command:
+    chdir: /home/ansible/graylog
+    cmd: docker compose up -d
+  changed_when: true
+  when: not restore
+
+- name: Restore backup configuration
+  block:
+    - name: Install tar
+      ansible.builtin.apt:
+        name: tar
+
+    - name: Stop container to load backup
+      ansible.builtin.command:
+        chdir: /home/ansible/graylog
+        cmd: docker compose down
+      changed_when: true
+
+    - name: Remove old container graylog data
+      ansible.builtin.file:
+        path: '/var/lib/docker/volumes/graylog_graylog_data'
+        state: absent
+
+    - name: Remove old container elastic search data
+      ansible.builtin.file:
+        path: '/var/lib/docker/volumes/graylog_es_data'
+        state: absent
+
+    - name: Remove old container mongo data
+      ansible.builtin.file:
+        path: '/var/lib/docker/volumes/graylog_mongo_data'
+        state: absent
+
+    - name: Unzip archived graylog data
+      ansible.builtin.unarchive:
+        src: '/home/greg/ansible_proxmox/roles/graylog/files/graylog.tar'
+        dest: /var/lib/docker/volumes/
+      changed_when: true
+
+    - name: Unzip archived elastic search data
+      ansible.builtin.unarchive:
+        src: '/home/greg/ansible_proxmox/roles/graylog/files/es.tar'
+        dest: /var/lib/docker/volumes/
+      changed_when: true
+
+    - name: Unzip archived mongo data
+      ansible.builtin.unarchive:
+        src: '/home/greg/ansible_proxmox/roles/graylog/files/mongo.tar'
+        dest: /var/lib/docker/volumes/
+      changed_when: true
+
+    - name: Remove graylog.conf
+      ansible.builtin.file:
+        path: '/usr/share/graylog/data/config'
+        state: absent
+
+    - name: Start graylog with docker compose
+      ansible.builtin.command:
+        chdir: /home/ansible/graylog
+        cmd: docker compose up -d
+      changed_when: true
+  when: restore

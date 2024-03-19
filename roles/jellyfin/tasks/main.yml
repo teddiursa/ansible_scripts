@@ -1,0 +1,152 @@
+---
+
+- name: Update package cache
+  ansible.builtin.apt:
+    update_cache: yes
+
+- name: Get stats of the Jellyfin folder
+  ansible.builtin.stat:
+    path: /opt/jellyfin
+  register: jellyfin_folder
+
+- name: Create group jellyfin
+  ansible.builtin.group:
+    name: jellyfin
+
+- name: Create user jellyfin
+  ansible.builtin.user:
+    name: jellyfin
+    groups: jellyfin
+    shell: /sbin/nologin
+    comment: Dedicated user for jellyfin
+    home: "/opt/jellyfin"
+
+
+- name: Download Jellyfin archive
+  ansible.builtin.get_url:
+    url: "https://repo.jellyfin.org/releases/server/linux/stable/combined/jellyfin_{{ jellyfin_version }}_amd64.tar.gz"
+    dest: "/opt/jellyfin/jellyfin_{{ jellyfin_version }}_amd64.tar.gz"
+    checksum: "sha256:https://repo.jellyfin.org/releases/server/linux/stable/combined/jellyfin_{{ jellyfin_version }}_amd64.tar.gz.sha256sum"
+    owner: jellyfin
+    group: jellyfin
+    mode: 0644
+
+- name: Unarchive downloaded Jellyfin archive
+  ansible.builtin.unarchive:
+    src: "/opt/jellyfin/jellyfin_{{ jellyfin_version }}_amd64.tar.gz"
+    dest: "/opt/jellyfin"
+    owner: jellyfin
+    group: jellyfin
+    remote_src: true
+    creates: "/opt/jellyfin/jellyfin_{{ jellyfin_version }}"
+
+- name: Create symlink for Jellyfin
+  ansible.builtin.file:
+    src: "/opt/jellyfin/jellyfin_{{ jellyfin_version }}"
+    dest: "/opt/jellyfin/jellyfin"
+    state: link
+    owner: jellyfin
+    group: jellyfin
+
+- name: Create persistent data directories for Jellyfin instance
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: jellyfin
+    group: jellyfin
+    mode: 0755
+  loop:
+    - "/opt/jellyfin/data"
+    - "/opt/jellyfin/cache"
+    - "/opt/jellyfin/config"
+    - "/opt/jellyfin/log"
+
+- name: Generate script for startup
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: "jellyfin"
+    group: "jellyfin"
+    mode: "{{ item.mode }}"
+  loop:
+    - src: "/home/greg/ansible_proxmox/roles/jellyfin/templates/jellyfin.sh.j2"
+      dest: "/usr/local/bin/jellyfin.sh"
+      mode: '0755'
+    - src: "/home/greg/ansible_proxmox/roles/jellyfin/templates/jellyfin.service.j2"
+      dest: "/etc/systemd/system/jellyfin.service"
+      mode: '0644'
+
+- name: Start Jellyfin on boot
+  ansible.builtin.systemd_service:
+    name: jellyfin.service
+    enabled: true
+    state: started
+
+- name: Stop Jellyfin service
+  ansible.builtin.service:
+    name: jellyfin
+    state: stopped
+
+- name: Install ffmeg
+  ansible.builtin.get_url:
+    url: "https://repo.jellyfin.org/releases/server/debian/versions/jellyfin-ffmpeg/6.0.1-3/jellyfin-ffmpeg6_6.0.1-3-bullseye_amd64.deb"
+    dest: "/tmp/jellyfin-ffmpeg.deb"
+
+- name: Install jellyfin-ffmpeg package
+  ansible.builtin.apt:
+    deb: "/tmp/jellyfin-ffmpeg.deb"
+    state: present
+
+# - name: Remove ffmpeg tmp package
+#   ansible.builtin.file:
+#     path: "/tmp/jellyfin-ffmpeg.deb"
+#     state: absent
+  
+# - name: Load backup configuration on fresh installation
+#   block: 
+#   - name: Stop Jellyfin service
+#     ansible.builtin.service:
+#       name: jellyfin
+#       state: stopped
+
+#   - name: Remove default configuration
+#     ansible.builtin.file:
+#       path: /opt/jellyfin
+#       state: absent
+
+#   - name: Unzip config data
+#     ansible.builtin.unarchive:
+#       src: '/home/greg/ansible_proxmox/roles/jellyfin/files/jellyfin.tar'
+#       dest: '/opt'
+#       extra_opts: --format=posix
+#       owner: jellyfin
+#       group: jellyfin
+#     changed_when: true
+#   when: not jellyfin_folder.stat.exists
+
+- name: Unmount previous CIFS share
+  ansible.posix.mount:
+    path: /mnt/share
+    state: unmounted
+
+- name: Remount the CIFS share
+  ansible.posix.mount:
+    path: /mnt/share
+    src: "//192.168.55.3/plex"
+    fstype: cifs
+    opts: "credentials=/etc/nas_credentials,file_mode=0766,dir_mode=0766,uid=jellyfin,gid=jellyfin"
+    state: mounted
+
+- name: Start Jellyfin service
+  ansible.builtin.service:
+    name: jellyfin
+    state: started
+
+- name: Update package cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 86400  # One day
+
+- name: Upgrade packages
+  ansible.builtin.apt:
+    upgrade: true

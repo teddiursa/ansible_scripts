@@ -48,3 +48,11 @@
   gather_facts: false
   roles:
     - homer
+
+- name: Add syslog
+  hosts: homer
+  vars:
+    syslog_server_ip: 192.168.55.50
+  roles:
+    - syslog_client
+  tags: syslog

@@ -8,5 +8,6 @@ group_vars/
 *.svg
 *.db
 *.ini
-
+graylog.conf
+node-id
 prometheus.yml

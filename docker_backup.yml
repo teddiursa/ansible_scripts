@@ -82,7 +82,44 @@
     - backup
   tags: utk
 
+- name: Back up graylog volume
+  hosts: docker
+  vars:
+    destination: /home/greg/ansible_proxmox/roles/graylog/files/
+    source: /var/lib/docker/volumes
+    tar_name: graylog.tar
+    folder_name: graylog_graylog_data
+    container_name: ''
+    type: folder
+  roles:
+    - backup
+  tags: graylog
 
+- name: Back up mongo volume
+  hosts: docker
+  vars:
+    destination: /home/greg/ansible_proxmox/roles/graylog/files/
+    source: /var/lib/docker/volumes
+    tar_name: mongo.tar
+    folder_name: graylog_mongo_data
+    container_name: ''
+    type: folder
+  roles:
+    - backup
+  tags: graylog
+
+- name: Back up elastic search volume
+  hosts: docker
+  vars:
+    destination: /home/greg/ansible_proxmox/roles/graylog/files/
+    source: /var/lib/docker/volumes
+    tar_name: es.tar
+    folder_name: graylog_es_data
+    container_name: ''
+    type: folder
+  roles:
+    - backup
+  tags: graylog
 # - name: Back up plex
 #   hosts: docker
 #   vars:

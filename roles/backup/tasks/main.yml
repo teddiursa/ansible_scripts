@@ -49,7 +49,7 @@
   block:
   - name: Archive the Remote directory
     ansible.builtin.command:
-      cmd: tar -czf /tmp/{{ tar_name }} -C {{ source }} {{ folder_name }}
+      cmd: tar --exclude='*.log' --exclude='*.0*' -czf /tmp/{{ tar_name }} -C {{ source }} {{ folder_name }}
 
   - name: Copy Archive
     ansible.builtin.fetch:

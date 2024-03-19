@@ -1,0 +1,10 @@
+---
+# usage ansible-playbook remove.yml --extra-var "vimids=[<vimid>... ,<vimid2>]"
+
+- name: Delete LXC
+  hosts: proxmox
+  become: true
+  roles:
+    - remove
+  vars:
+    loop_list: "{{ vimids }}"

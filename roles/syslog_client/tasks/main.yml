@@ -1,0 +1,16 @@
+---
+
+- name: Install Rsyslog
+  apt:
+    name: rsyslog
+    state: present
+
+- name: Configure Rsyslog to send logs to external server
+  lineinfile:
+    path: /etc/rsyslog.conf
+    line: "*.err @{{ syslog_server_ip }}:1514"
+
+- name: Restart Rsyslog service
+  service:
+    name: rsyslog
+    state: restarted

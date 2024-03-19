@@ -24,6 +24,7 @@
     working_dir: "{{ container_workdir }}"
     networks:
       - name: "{{ network_name }}"
+    restart_policy: unless-stopped
   loop: "{{ volumes | dict2items }}"
 
 - name: Create a container with no volume
@@ -34,6 +35,7 @@
     working_dir: "{{ container_workdir }}"
     networks:
       - name: "{{ network_name }}"
+    restart_policy: unless-stopped
   when: not volumes
 
 - name: Install container dependencies
@@ -83,5 +85,6 @@
       working_dir: "{{ container_workdir }}"
       networks:
         - name: "{{ network_name }}"
+      restart_policy: unless-stopped
     loop: "{{ volumes | dict2items }}"
   when: archive_name is defined

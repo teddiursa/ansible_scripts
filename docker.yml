@@ -1,7 +1,7 @@
 ---
 
 # Creates docker container, installs docker containers, and load their backups.
-# NOTE: requires root for LXC options needs for docker
+# NOTE: requires root for LXC options needed for docker
 
 - name: Create LXC for docker
   hosts: proxmox
@@ -11,10 +11,10 @@
     ip: '{"net0":"name=eth0,bridge=vmbr0,ip=192.168.55.50/24,gw=192.168.55.1"}'
     ostemplate: "local:vztmpl/debian-11-standard_11.7-1_amd64.tar.zst"
     storage: nvme
-    disk: 'nvme:8'
+    disk: 'nvme:32'
     cpus: 1
-    cores: 1
-    memory: 2048
+    cores: 2
+    memory: 4096
     boot: true
     description: 'Docker host made by ansible'
     unprivileged: true
@@ -23,6 +23,7 @@
       - keyctl=1
   roles:
     - proxmox
+  tags: base
 
 - name: Install ansible user
   hosts: docker
@@ -30,6 +31,7 @@
   gather_facts: false
   roles:
     - bootstrap
+  tags: base
 
 - name: Install unzip
   hosts: docker
@@ -39,12 +41,14 @@
     package_state: present
   roles:
     - install
+  tags: base
 
 - name: Install docker
   hosts: docker
   gather_facts: false
   roles:
     - docker_host
+  tags: base
 
 
 - name: Install uptime-kuma container
@@ -64,11 +68,22 @@
     archive_name: 'utk.tar'
   roles:
     - docker_container
+  tags: utk
 
 - name: Install Nginx proxy manager using docker compose
   hosts: docker
   roles:
     - nginx
+  tags: nginx
+
+- name: Install graylog using docker compose
+  hosts: docker
+  remote_user: root
+  vars:
+    - restore: true
+  roles:
+    - graylog
+  tags: graylog
 
 - name: Copy prometheus.yml file
   hosts: docker
@@ -81,6 +96,7 @@
     remote: false
   roles:
     - copy
+  tags: prometheus,grafana
 
 - name: Install prometheus container with prometheus.yml file
   hosts: docker
@@ -98,7 +114,7 @@
     container_workdir:
   roles:
     - docker_container
-
+  tags: prometheus,grafana
 
 - name: Install grafana
   hosts: docker
@@ -115,6 +131,7 @@
     container_workdir:
   roles:
     - docker_container
+  tags: grafana
 
 - name: Copy grafana.ini file
   hosts: docker
@@ -127,6 +144,7 @@
     mode: '0644'
   roles:
     - docker_copy
+  tags: grafana
 
 - name: Copy grafana.db file
   hosts: docker
@@ -139,6 +157,7 @@
     mode: '0644'
   roles:
     - docker_copy
+  tags: grafana
 
 - name: Install grafana plugins
   hosts: docker
@@ -147,8 +166,19 @@
     cmd: 'grafana cli plugins install grafana-github-datasource'
   roles:
     - docker_run
+  tags: grafana
+
+- name: Add syslog
+  hosts: docker
+  vars:
+    syslog_server_ip: 127.0.0.1
+  roles:
+    - syslog_client
+  tags: syslog
 
 - name: Install node exporter
   hosts: docker
   roles:
     - prometheus.prometheus.node_exporter
+  tags: prometheus,grafana
+

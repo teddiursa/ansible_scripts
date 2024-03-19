@@ -4,6 +4,10 @@
 # Can update template file as needed
 # Uses generic config file to add to systemctl
 
+- name: Install unzip
+  ansible.builtin.package:
+    name: unzip
+
 - name: Get homer release zip
   ansible.builtin.get_url:
     url: https://github.com/bastienwirtz/homer/releases/latest/download/homer.zip

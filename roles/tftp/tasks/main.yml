@@ -1,6 +1,7 @@
 ---
 # Installs tftp server
 # Disables IPv6
+# Tftp Directory is in /var/lib/tftpboot
 # Adds an empty test file for easier testing
 
 - name: Install tftpd-hpa
@@ -8,7 +9,6 @@
   ansible.builtin.apt:
     name: tftpd-hpa
     policy_rc_d: 101
-  when: ansible_distribution == "Debian"
 
 - name: Set as IPv4
   tags: tftp,Debian

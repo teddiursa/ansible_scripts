@@ -1,10 +1,11 @@
 ---
 # Creates user for ansible and generic greg user
 # Adds them to sudo and also adds ssh key for ansible
+# Sets NTP server for non LXC containers
 
 - name: Wait for connection
   ansible.builtin.wait_for_connection:
-    delay: 15
+    delay: 5
     timeout: 300
 
 - name: Set vault file
@@ -14,45 +15,80 @@
 - name: Install sudo
   ansible.builtin.apt:
     name: sudo
+  register: sudo_installed
 
-- name: Generate hashed password
-  ansible.builtin.set_fact:
-    hashed_password: "{{ api_password | password_hash('sha512') }}"
+- name: First boot
+  block:
+  - name: Generate hashed password
+    ansible.builtin.set_fact:
+      hashed_password: "{{ api_password | password_hash('sha512') }}"
 
-- name: Create user ansible
-  ansible.builtin.user:
-    name: ansible
-    groups: root
-    shell: /bin/bash
-    create_home: true
-    password: "{{ hashed_password }}"
+  - name: Create user ansible
+    ansible.builtin.user:
+      name: ansible
+      groups: root
+      shell: /bin/bash
+      create_home: true
+      password: "{{ hashed_password }}"
 
-- name: Add ssh key for test ansible
-  ansible.posix.authorized_key:
-    user: ansible
-    key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINOJj6Bi27ocohN68teE3yeu5ABXGbdxxySwiFvnOqiB ansible"
+  - name: Add ssh key for test ansible
+    ansible.posix.authorized_key:
+      user: ansible
+      key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINOJj6Bi27ocohN68teE3yeu5ABXGbdxxySwiFvnOqiB ansible"
 
-- name: Add sudoers file for ansible user
-  ansible.builtin.copy:
-    src: sudoer_ansible
-    dest: /etc/sudoers.d/ansible
-    owner: root
-    group: root
-    mode: '0440'
+  - name: Add sudoers file for ansible user
+    ansible.builtin.copy:
+      src: sudoer_ansible
+      dest: /etc/sudoers.d/ansible
+      owner: root
+      group: root
+      mode: '0440'
 
-- name: Create user greg
-  ansible.builtin.user:
-    name: greg
-    groups: root
-    shell: /bin/bash
-    create_home: true
-    password: "{{ hashed_password }}"
+  - name: Create user greg
+    ansible.builtin.user:
+      name: greg
+      groups: root
+      shell: /bin/bash
+      create_home: true
+      password: "{{ hashed_password }}"
 
+  - name: Add sudoers file for greg
+    ansible.builtin.copy:
+      src: sudoer_greg
+      dest: /etc/sudoers.d/ansible
+      owner: root
+      group: root
+      mode: '0440'
 
-- name: Add sudoers file for greg
-  ansible.builtin.copy:
-    src: sudoer_greg
-    dest: /etc/sudoers.d/ansible
-    owner: root
-    group: root
-    mode: '0440'
+  - name: Create the cron job for ssh directory bug
+    ansible.builtin.cron:
+      name: ssh_restart
+      job: "@reboot mkdir -p -m0755 /var/run/sshd && systemctl restart ssh.service"
+      user: ansible
+      cron_file: /etc/cron.d/sshd_cron
+      state: present
+
+  - name: Set virtualization type variable
+    ansible.builtin.set_fact:
+      is_container: "'lxc' in ansible_processor_virt_type|default('')"
+
+  - name: Set NTP timezone for VMs
+    block:
+      - name: Set NTP server for timesyncd
+        ansible.builtin.template:
+          src: ~/ansible_proxmox/roles/bootstrap/templates/timesyncd.j2
+          dest: /etc/systemd/timesyncd.conf
+          owner: root
+          group: root
+          mode: '0644'
+        changed_when: true
+        tags: ntp
+
+      - name: Restart NTP service
+        ansible.builtin.service:
+          name: systemd-timesyncd.service
+          state: restarted
+        tags: ntp
+    when: not is_container
+
+  when: sudo_installed.changed

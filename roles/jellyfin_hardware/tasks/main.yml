@@ -1,0 +1,49 @@
+---
+
+- name: Add GPU for hardware encoding
+  blockinfile: 
+    state: present
+    insertafter: EOF
+    dest:  /etc/pve/lxc/"{{ vimid }}".conf
+    marker: "<!-- add GPU ANSIBLE MANAGED BLOCK -->"
+    content: |
+      lxc.cgroup2.devices.allow: c 226:0 rwm
+      lxc.cgroup2.devices.allow: c 226:128 rwm
+      lxc.cgroup2.devices.allow: c 29:0 rwm
+      lxc.cgroup2.devices.allow: c 13:* rwm
+      lxc.mount.entry: /dev/dri dev/dri none bind,optional,create=dir
+      lxc.mount.entry: /dev/fb0 dev/fb0 none bind,optional,create=file
+      lxc.autodev: 1
+
+
+# add jellyfin to group input
+# reboot
+# install drivers
+# enable qsv in config
+
+# - name: Append a line to myconfig.conf
+#   ansible.builtin.lineinfile:
+#     path: /etc/pve/lxc/"{{ vimid }}".conf
+# "lxc.cgroup2.devices.allow: c 226:0 rwm"
+
+
+# lxc.cgroup2.devices.allow: c 226:128 rwm
+# lxc.mount.entry: /dev/dri/renderD128 dev/dri/renderD128 none bind,optional,create=file
+
+## reboot
+# add jellyfin to groups
+
+
+
+
+  #   - name: Enable QuickSync hardware encoding
+  #     ansible.builtin.shell:
+  #       cmd: "echo 'export JELLYFIN_FFMPEG_VAAPI=true' >> /etc/default/jellyfin"
+  #     notify:
+  #       - Restart Jellyfin
+
+  # handlers:
+  #   - name: Restart Jellyfin
+  #     ansible.builtin.service:
+  #       name: jellyfin
+  #       state: restarted
