@@ -28,9 +28,22 @@
   roles:
     - bootstrap
 
+- name: Add syslog
+  hosts: plex
+  remote_user: ansible
+  gather_facts: false
+  become: true
+  vars:
+    syslog_server_ip: 192.168.55.50
+  roles:
+    - syslog_client
+  tags: syslogs
+
 - name: Install unzip
   hosts: plex
+  remote_user: ansible
   gather_facts: false
+  become: true
   vars:
     package_name: unzip
     package_state: present
@@ -39,6 +52,8 @@
 
 - name: Add nas to host
   hosts: plex
+  remote_user: ansible
+  gather_facts: false
   become: true
   vars_files:
     - group_vars/proxmox.yml
@@ -47,14 +62,8 @@
 
 - name: Install plex and copy plex config
   hosts: plex
+  remote_user: ansible
+  gather_facts: false
   become: true
   roles:
     - plex
-
-- name: Add syslog
-  hosts: plex
-  vars:
-    syslog_server_ip: 192.168.55.50
-  roles:
-    - syslog_client
-  tags: syslog

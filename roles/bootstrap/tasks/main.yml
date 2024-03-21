@@ -23,10 +23,15 @@
     ansible.builtin.set_fact:
       hashed_password: "{{ api_password | password_hash('sha512') }}"
 
+  - name: Create ansible group
+    ansible.builtin.group:
+      name: ansible
+      state: present
+
   - name: Create user ansible
     ansible.builtin.user:
       name: ansible
-      groups: root
+      groups: ansible
       shell: /bin/bash
       create_home: true
       password: "{{ hashed_password }}"
@@ -36,29 +41,33 @@
       user: ansible
       key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINOJj6Bi27ocohN68teE3yeu5ABXGbdxxySwiFvnOqiB ansible"
 
-  - name: Add sudoers file for ansible user
-    ansible.builtin.copy:
-      src: sudoer_ansible
-      dest: /etc/sudoers.d/ansible
-      owner: root
-      group: root
-      mode: '0440'
+
+  - name: Add ansible to sudoers
+    community.general.sudoers:
+      name: Sudo_ansible
+      state: present
+      user: ansible
+      commands: ALL
+
+  - name: Create greg group
+    ansible.builtin.group:
+      name: greg
+      state: present
 
   - name: Create user greg
     ansible.builtin.user:
       name: greg
-      groups: root
+      groups: greg
       shell: /bin/bash
       create_home: true
       password: "{{ hashed_password }}"
 
-  - name: Add sudoers file for greg
-    ansible.builtin.copy:
-      src: sudoer_greg
-      dest: /etc/sudoers.d/ansible
-      owner: root
-      group: root
-      mode: '0440'
+  - name: Add ansible to sudoers
+    community.general.sudoers:
+      name: Sudo_greg
+      state: present
+      user: greg
+      commands: ALL
 
   - name: Create the cron job for ssh directory bug
     ansible.builtin.cron:
@@ -72,7 +81,7 @@
     ansible.builtin.set_fact:
       is_container: "'lxc' in ansible_processor_virt_type|default('')"
 
-  - name: Set NTP timezone for VMs
+  - name: Enable NTP for VMs
     block:
       - name: Set NTP server for timesyncd
         ansible.builtin.template:

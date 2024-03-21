@@ -41,7 +41,7 @@
     onboot: "{{ boot }}"
     features: "{{ features }}"
     unprivileged: "{{ unprivileged }}"
-    timezone: host
+    timezone: UTC
   when: vm_status.rc == 0 and 'already exists' not in vm_status.stderr
 
 - name: Start the VM

@@ -33,24 +33,31 @@
   roles:
     - bootstrap
 
-- name: Install unzip
-  hosts: docker
-  gather_facts: false
-  vars:
-    package_name: unzip
-    package_state: present
-  roles:
-    - install
+# - name: Install unzip
+#   hosts: docker
+#   gather_facts: false
+#   remote_user: ansible
+#   become: true
+#   vars:
+#     package_name: unzip
+#     package_state: present
+#   roles:
+#     - install
 
 
 - name: Install homer
   hosts: homer
+  remote_user: ansible
   gather_facts: false
+  become: true
   roles:
     - homer
 
 - name: Add syslog
   hosts: homer
+  remote_user: ansible
+  gather_facts: false
+  become: true
   vars:
     syslog_server_ip: 192.168.55.50
   roles:

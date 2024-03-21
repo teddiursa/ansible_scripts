@@ -1,5 +1,11 @@
 ---
 
+# Var restore bool indicates if it should try and load a backup or not
+# Uses volumes graylog_graylog_data, graylog_mongo_data, graylog_es_data
+# Graylog config file is in: /usr/share/graylog/data/config/graylog.conf
+# docker cp graylog-graylog-1:/usr/share/graylog/data/config/graylog.conf .
+# docker cp graylog.conf graylog-graylog-1:/usr/share/graylog/data/config/graylog.conf
+
 - name: Set vault file
   ansible.builtin.include_vars:
     file: group_vars/proxmox.yml
@@ -72,11 +78,6 @@
         src: '/home/greg/ansible_proxmox/roles/graylog/files/mongo.tar'
         dest: /var/lib/docker/volumes/
       changed_when: true
-
-    - name: Remove graylog.conf
-      ansible.builtin.file:
-        path: '/usr/share/graylog/data/config'
-        state: absent
 
     - name: Start graylog with docker compose
       ansible.builtin.command:

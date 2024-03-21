@@ -19,6 +19,9 @@
   
 - name: Back up nginx data
   hosts: docker
+  remote_user: ansible
+  gather_facts: false
+  become: true
   vars:
     source: '/home/ansible/nginx'
     destination: '/home/greg/ansible_proxmox/roles/nginx/files/'
@@ -32,6 +35,9 @@
   
 - name: Backup grafana db
   hosts: docker
+  remote_user: ansible
+  gather_facts: false
+  become: true
   vars: 
     container_name: grafana
     destination: /home/greg/ansible_proxmox/roles/docker_container/files/grafana.db
@@ -45,6 +51,9 @@
 
 - name: Backup grafana ini
   hosts: docker
+  remote_user: ansible
+  gather_facts: false
+  become: true
   vars: 
     container_name: grafana
     destination: /home/greg/ansible_proxmox/roles/docker_container/files/grafana.ini
@@ -58,6 +67,9 @@
 
 - name: Backup prometheus.yml
   hosts: docker
+  remote_user: ansible
+  gather_facts: false
+  become: true
   vars: 
     destination: /home/greg/ansible_proxmox/roles/docker_container/files/prometheus.yml
     source: /opt/prometheus.yml
@@ -71,6 +83,9 @@
 
 - name: Back up UTK folder
   hosts: docker
+  remote_user: ansible
+  gather_facts: false
+  become: true
   vars:
     destination: /home/greg/ansible_proxmox/roles/docker_container/files/
     source: /var/lib/docker/volumes
@@ -84,6 +99,9 @@
 
 - name: Back up graylog volume
   hosts: docker
+  remote_user: ansible
+  gather_facts: false
+  become: true
   vars:
     destination: /home/greg/ansible_proxmox/roles/graylog/files/
     source: /var/lib/docker/volumes
@@ -97,6 +115,9 @@
 
 - name: Back up mongo volume
   hosts: docker
+  remote_user: ansible
+  gather_facts: false
+  become: true
   vars:
     destination: /home/greg/ansible_proxmox/roles/graylog/files/
     source: /var/lib/docker/volumes
@@ -110,6 +131,9 @@
 
 - name: Back up elastic search volume
   hosts: docker
+  remote_user: ansible
+  gather_facts: false
+  become: true
   vars:
     destination: /home/greg/ansible_proxmox/roles/graylog/files/
     source: /var/lib/docker/volumes
@@ -120,6 +144,39 @@
   roles:
     - backup
   tags: graylog
+
+- name: Back up authentik database volume
+  hosts: docker
+  remote_user: ansible
+  gather_facts: false
+  become: true
+  vars:
+    destination: /home/greg/ansible_proxmox/roles/authentik/files/
+    source: /var/lib/docker/volumes
+    tar_name: database.tar
+    folder_name: authentik_database
+    container_name: ''
+    type: folder
+  roles:
+    - backup
+  tags: authentik
+
+- name: Back up authentik database volume
+  hosts: docker
+  remote_user: ansible
+  gather_facts: false
+  become: true
+  vars:
+    destination: /home/greg/ansible_proxmox/roles/authentik/files/
+    source: /var/lib/docker/volumes
+    tar_name: redis.tar
+    folder_name: authentik_redis
+    container_name: ''
+    type: folder
+  roles:
+    - backup
+  tags: authentik
+
 # - name: Back up plex
 #   hosts: docker
 #   vars:

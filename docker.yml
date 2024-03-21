@@ -14,7 +14,7 @@
     disk: 'nvme:32'
     cpus: 1
     cores: 2
-    memory: 4096
+    memory: 6144
     boot: true
     description: 'Docker host made by ansible'
     unprivileged: true
@@ -35,7 +35,9 @@
 
 - name: Install unzip
   hosts: docker
+  remote_user: ansible
   gather_facts: false
+  become: true
   vars:
     package_name: unzip
     package_state: present
@@ -45,7 +47,9 @@
 
 - name: Install docker
   hosts: docker
+  remote_user: ansible
   gather_facts: false
+  become: true
   roles:
     - docker_host
   tags: base
@@ -53,6 +57,9 @@
 
 - name: Install uptime-kuma container
   hosts: docker
+  remote_user: ansible
+  gather_facts: false
+  become: true
   vars:
     image: louislam/uptime-kuma
     image_tag: 1
@@ -72,13 +79,18 @@
 
 - name: Install Nginx proxy manager using docker compose
   hosts: docker
+  remote_user: ansible
+  gather_facts: false
+  become: true
   roles:
     - nginx
   tags: nginx
 
 - name: Install graylog using docker compose
   hosts: docker
-  remote_user: root
+  remote_user: ansible
+  gather_facts: false
+  become: true
   vars:
     - restore: true
   roles:
@@ -87,6 +99,9 @@
 
 - name: Copy prometheus.yml file
   hosts: docker
+  remote_user: ansible
+  gather_facts: false
+  become: true
   vars:
     source: ~/ansible_proxmox/roles/docker_container/files/prometheus.yml
     destination: "/opt/prometheus.yml"
@@ -100,6 +115,9 @@
 
 - name: Install prometheus container with prometheus.yml file
   hosts: docker
+  remote_user: ansible
+  gather_facts: false
+  become: true
   vars:
     image: prom/prometheus
     image_tag: latest
@@ -118,6 +136,9 @@
 
 - name: Install grafana
   hosts: docker
+  remote_user: ansible
+  gather_facts: false
+  become: true
   vars:
     image: grafana/grafana-enterprise
     image_tag:
@@ -135,6 +156,9 @@
 
 - name: Copy grafana.ini file
   hosts: docker
+  remote_user: ansible
+  gather_facts: false
+  become: true
   vars:
     container: 'grafana'
     source: /home/greg/ansible_proxmox/roles/docker_container/files/grafana.ini
@@ -148,6 +172,9 @@
 
 - name: Copy grafana.db file
   hosts: docker
+  remote_user: ansible
+  gather_facts: false
+  become: true
   vars:
     container: 'grafana'
     source: /home/greg/ansible_proxmox/roles/docker_container/files/grafana.db
@@ -161,6 +188,9 @@
 
 - name: Install grafana plugins
   hosts: docker
+  remote_user: ansible
+  gather_facts: false
+  become: true
   vars: 
     container_name: grafana
     cmd: 'grafana cli plugins install grafana-github-datasource'
@@ -168,8 +198,22 @@
     - docker_run
   tags: grafana
 
-- name: Add syslog
+- name: Install authentik using docker compose
   hosts: docker
+  remote_user: ansible
+  gather_facts: false
+  become: true
+  vars:
+    - restore: true
+  roles:
+    - authentik
+  tags: authentik
+
+- name: Add syslog config
+  hosts: docker
+  remote_user: ansible
+  gather_facts: false
+  become: true
   vars:
     syslog_server_ip: 127.0.0.1
   roles:
@@ -178,6 +222,8 @@
 
 - name: Install node exporter
   hosts: docker
+  remote_user: ansible
+  become: true
   roles:
     - prometheus.prometheus.node_exporter
   tags: prometheus,grafana

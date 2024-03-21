@@ -1,0 +1,79 @@
+---
+
+- name: Set vault file
+  ansible.builtin.include_vars:
+    file: group_vars/authentik.yml
+
+- name: Make authentik dir
+  ansible.builtin.file:
+    path: /home/ansible/authentik
+    state: directory
+    owner: ansible
+    group: ansible
+    mode: '0644'
+
+- name: Copy config file
+  ansible.builtin.template:
+    src: ~/ansible_proxmox/roles/authentik/files/docker-compose.yml
+    dest: /home/ansible/authentik/docker-compose.yml
+    owner: ansible
+    group: ansible
+    mode: '0644'
+  changed_when: true
+
+- name: Configure .env file with template
+  ansible.builtin.template:
+    src: /home/greg/ansible_proxmox/roles/authentik/templates/env.j2
+    dest: /home/ansible/authentik/.env
+    owner: ansible
+    group: ansible
+    mode: '0644'
+  changed_when: true
+
+- name: Start authentik with docker compose
+  ansible.builtin.command:
+    chdir: /home/ansible/authentik
+    cmd: docker compose up -d
+  changed_when: true
+  when: not restore
+
+- name: Restore backup configuration
+  block:
+    - name: Install tar
+      ansible.builtin.apt:
+        name: tar
+
+    - name: Stop container to load backup
+      ansible.builtin.command:
+        chdir: /home/ansible/authentik
+        cmd: docker compose down
+      changed_when: true
+
+    - name: Remove old container database volume
+      ansible.builtin.file:
+        path: '/var/lib/docker/volumes/authentik_database'
+        state: absent
+
+    - name: Remove old container redis volume
+      ansible.builtin.file:
+        path: '/var/lib/docker/volumes/authentik_redis'
+        state: absent
+
+    - name: Unzip archived authentik data
+      ansible.builtin.unarchive:
+        src: '/home/greg/ansible_proxmox/roles/authentik/files/database.tar'
+        dest: /var/lib/docker/volumes/
+      changed_when: true
+
+    - name: Unzip archived redis data
+      ansible.builtin.unarchive:
+        src: '/home/greg/ansible_proxmox/roles/authentik/files/redis.tar'
+        dest: /var/lib/docker/volumes/
+      changed_when: true
+
+    - name: Start authentik with docker compose
+      ansible.builtin.command:
+        chdir: /home/ansible/authentik
+        cmd: docker compose up -d
+      changed_when: true
+  when: restore
