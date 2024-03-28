@@ -79,6 +79,21 @@ services:
     depends_on:
       - postgresql
       - redis
+  # authentik_ldap:
+  #     image: ghcr.io/goauthentik/ldap
+  #     # Optionally specify which networks the container should be
+  #     # might be needed to reach the core authentik server
+  #     # networks:
+  #     #   - foo
+  #     ports:
+  #         - 389:3389
+  #         - 636:6636
+  #     environment:
+  #         # AUTHENTIK_HOST: https://your-authentik.tld
+  #         AUTHENTIK_HOST: https://authentik.teddiursa.net
+  #         # AUTHENTIK_INSECURE: "false"
+  #         AUTHENTIK_INSECURE: "true" 
+  #         AUTHENTIK_TOKEN: token-generated-by-authentik
 
 volumes:
   database:

@@ -1,0 +1,56 @@
+---
+
+- name: Install python3
+  apt: 
+    name: python3 
+    state: present
+
+- name: Ensure python3 is at the latest version
+  apt: 
+    name: python3 
+    state: latest
+
+- name: Create website var directory
+  ansible.builtin.file:
+    path: /var/website/
+    state: directory
+    mode: '0755'
+
+- name: Copy html file to server
+  copy:
+    src: /home/greg/ansible_proxmox/roles/form_website/files/index.html
+    dest: /var/website
+    mode: '0644'
+
+- name: Copy css file to server
+  copy:
+    src: /home/greg/ansible_proxmox/roles/form_website/files/form.css
+    dest: /var/website
+    mode: '0644'
+
+- name: Create Python script to start HTTP server
+  copy:
+    content: |
+      #!/usr/bin/env python3
+      import http.server
+      import socketserver
+      import os
+
+      PORT = 80
+      DIRECTORY = "/var/website"
+
+      os.chdir(DIRECTORY)
+
+      handler = http.server.SimpleHTTPRequestHandler
+      handler.directory = DIRECTORY
+
+      with socketserver.TCPServer(("", PORT), handler) as httpd:
+          print(f"Serving at port {PORT}")
+          httpd.serve_forever()
+    dest: /var/website/start_server.py
+    mode: '0755'
+
+- name: Start http server
+  shell: nohup python3 /var/website/start_server.py > /dev/null 2>&1 &
+  args:
+    executable: /bin/bash
