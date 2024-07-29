@@ -1,0 +1,50 @@
+---
+
+- name: Create VM for smallstep CA
+  hosts: proxmox
+  become: true
+  vars:
+    hostname: smallstep-CA
+    vmid: 698
+    ip: '192.168.65.98/24'
+    gw: '192.168.65.1'
+    vlan: '65'
+    ostemplate: "local:vztmpl/alpine.tar.zst"
+    storage: nvme
+    disk: 'nvme:8'
+    cpus: 1
+    cores: 2
+    memory: 2048
+    boot: true
+    description: 'smallstep alpine host made by ansible'
+    unprivileged: true
+    features: null
+  roles:
+    - proxmox
+
+
+- name: Wait for VM to be reachable/usable
+  hosts: smallstep
+  gather_facts: false
+  tasks:
+    - name: Wait for connection
+      wait_for_connection:
+        delay: 5
+        timeout: 300
+
+- name: Install ansible user
+  hosts: smallstep
+  remote_user: root
+  gather_facts: true
+  roles:
+    - bootstrap
+
+
+- name: Install step-cli and step-ca
+  hosts: smallstep
+  remote_user: ansible
+  gather_facts: true
+  become: true
+  vars:
+  roles:
+    - smallstep

@@ -1,0 +1,20 @@
+---
+
+- name: Back up plexmediaserver folder
+  hosts: plex
+  remote_user: ansible
+  gather_facts: false
+  become: true
+  vars:
+    destination: /home/greg/projects/ansible_proxmox/roles/plex/files/
+    source: '/var/lib'
+    tar_name: plex.tar
+    folder_name: plexmediaserver
+    exclude_folders: 
+      - "'/var/lib/plexmediaserver/Library/Application Support/Plex Media Server/Cache'"
+      - "'/var/lib/plexmediaserver/Library/Application Support/Plex Media Server/Logs'"
+    container_name: ''
+    type: folder
+  roles:
+    - backup
+  tags: plex

@@ -1,0 +1,37 @@
+---
+# Role to install and configure snmpd for snmp v1 and v2c
+
+# Required variables:
+# contact
+# location
+# snmp_community
+
+# Optional variables:
+# extra_arguments
+
+- name: Install and configure snmpd
+  block:
+    - name: Install snmpd
+      package:
+        name: snmpd
+        state: present
+
+    - name: Configure snmpd
+      template:
+        src: ~/projects/ansible_proxmox/roles/snmp/files/snmpd.j2
+        dest: /etc/snmp/snmpd.conf
+        mode: '0644'
+
+    - name: Append extra arguments to snmpd.conf
+      lineinfile:
+        path: /etc/snmp/snmpd.conf
+        line: "{{ item }}"
+        insertafter: EOF
+      with_items: "{{ extra_arguments }}"
+      when: extra_arguments is defined
+
+    - name: restart snmpd
+      service:
+        name: snmpd
+        state: restarted
+

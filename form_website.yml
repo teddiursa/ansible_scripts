@@ -1,0 +1,60 @@
+---
+
+# Create a simple html website with a form for an internal python application
+
+- name: Create LXC for form website
+  hosts: proxmox
+  become: true
+  vars:
+    hostname: form
+    vmid: 584
+    ip: '192.168.55.84/24'
+    gw: '192.168.55.1'
+    vlan: '65'
+    ostemplate: "local:vztmpl/alpine.tar.zst"
+    storage: nvme
+    disk: 'nvme:8'
+    cpus: 1
+    cores: 1
+    memory: 512
+    boot: true
+    description: 'Website for form application by ansible'
+    features: null
+    unprivileged: true
+  roles:
+    - proxmox
+
+- name: Wait for VM to be reachable/usable
+  hosts: form
+  gather_facts: false
+  tasks:
+    - name: Wait for connection
+      wait_for_connection:
+        delay: 5
+        timeout: 300
+
+- name: Install ansible user
+  hosts: form
+  remote_user: root
+  gather_facts: true
+  roles:
+    - bootstrap
+
+- name: Add syslog
+  hosts: form
+  remote_user: ansible
+  gather_facts: true
+  become: true
+  vars:
+    syslog_server_ip: 192.168.55.50
+  roles:
+    - syslog_client
+  tags: syslog
+
+- name: Setup Form python server
+  hosts: form
+  remote_user: ansible
+  gather_facts: true
+  become: true
+  roles:
+    - simple_website

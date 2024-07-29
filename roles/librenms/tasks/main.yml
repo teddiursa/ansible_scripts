@@ -1,0 +1,226 @@
+---
+
+- name: Install required packages
+  block:
+    - name: Install required packages
+      apt:
+        name:
+          - apt-transport-https
+          - lsb-release
+          - ca-certificates
+          - wget
+          - acl
+          - curl
+          - fping
+          - git
+          - graphviz
+          - imagemagick
+          - mariadb-client
+          - mariadb-server
+          - mtr-tiny
+          - nginx-full
+          - nmap
+          - php8.2-cli
+          - php8.2-curl
+          - php8.2-fpm
+          - php8.2-gd
+          - php8.2-gmp
+          - php8.2-mbstring
+          - php8.2-mysql
+          - php8.2-snmp
+          - php8.2-xml
+          - php8.2-zip
+          - python3-dotenv
+          - python3-pymysql
+          - python3-redis
+          - python3-setuptools
+          - python3-systemd
+          - python3-pip
+          - rrdtool
+          - snmp
+          - snmpd
+          - unzip
+          - whois
+        state: present
+
+    - name: Add librenms user
+      user:
+        name: librenms
+        home: /opt/librenms
+        system: yes
+        shell: /bin/bash
+
+    - name: Download LibreNMS
+      git:
+        repo: https://github.com/librenms/librenms.git
+        dest: /opt/librenms
+        force: yes
+        accept_hostkey: yes
+
+    - name: Set permissions
+      file:
+        path: "{{ item }}"
+        owner: librenms
+        group: librenms
+        mode: '0771'
+        recurse: yes
+      with_items:
+        - /opt/librenms
+        - /opt/librenms/rrd
+        - /opt/librenms/logs
+        - /opt/librenms/bootstrap/cache
+        - /opt/librenms/storage
+
+    - name: Install PHP dependencies
+      shell: |
+        su - librenms -c "./scripts/composer_wrapper.php install --no-dev"
+      args:
+        executable: /bin/bash
+
+    - name: Set timezone
+      shell: |
+        timedatectl set-timezone Etc/UTC
+      args:
+        executable: /bin/bash
+
+    - name: Configure MariaDB
+      lineinfile:
+        path: /etc/mysql/mariadb.conf.d/50-server.cnf
+        line: "{{ item }}"
+      with_items:
+        - "innodb_file_per_table=1"
+        - "lower_case_table_names=0"
+      notify: Restart MariaDB
+
+    - name: Create MariaDB database and user
+      mysql_db:
+        name: librenms
+        collation: utf8mb4_unicode_ci
+        state: present
+
+    - name: Create MariaDB user
+      mysql_user:
+        name: librenms
+        password: password
+        priv: "librenms.*:ALL"
+        host: localhost
+        state: present
+
+  handlers:
+    - name: Restart MariaDB
+      systemd:
+        name: mariadb
+        state: restarted
+
+- name: Configure PHP-FPM
+  block:
+    - name: Copy PHP-FPM pool configuration
+      copy:
+        src: /etc/php/8.2/fpm/pool.d/www.conf
+        dest: /etc/php/8.2/fpm/pool.d/librenms.conf
+
+    - name: Update PHP-FPM pool configuration
+      lineinfile:
+        path: /etc/php/8.2/fpm/pool.d/librenms.conf
+        regexp: '^(\[www\])'
+        line: "[librenms]"
+      notify: Restart PHP-FPM
+
+    - name: Change user and group in PHP-FPM pool configuration
+      lineinfile:
+        path: /etc/php/8.2/fpm/pool.d/librenms.conf
+        regexp: '^(user|group) ='
+        line: "{{ item }}"
+      with_items:
+        - "user = librenms"
+        - "group = librenms"
+      notify: Restart PHP-FPM
+
+    - name: Change listen in PHP-FPM pool configuration
+      lineinfile:
+        path: /etc/php/8.2/fpm/pool.d/librenms.conf
+#        regexp
+
+
+# Existing tasks from the previous playbook...
+
+# Additional steps for setting up LibreNMS on Debian
+- name: Enable lnms command completion
+  block:
+    - name: Create symbolic link for lnms command
+      file:
+        src: /opt/librenms/lnms
+        dest: /usr/bin/lnms
+        state: link
+
+    - name: Copy lnms completion script
+      copy:
+        src: /opt/librenms/misc/lnms-completion.bash
+        dest: /etc/bash_completion.d/
+
+# Configure snmpd
+- name: Configure snmpd
+  hosts: localhost
+  become: yes
+  tasks:
+    - name: Copy snmpd configuration file
+      copy:
+        src: /opt/librenms/snmpd.conf.example
+        dest: /etc/snmp/snmpd.conf
+
+    - name: Set community string in snmpd.conf
+      lineinfile:
+        path: /etc/snmp/snmpd.conf
+        regexp: '^com2sec'
+        line: 'com2sec readonly  default         RANDOMSTRINGGOESHERE'
+
+    - name: Download distro script
+      get_url:
+        url: https://raw.githubusercontent.com/librenms/librenms-agent/master/snmp/distro
+        dest: /usr/bin/distro
+        mode: '0755'
+
+    - name: Enable and restart snmpd
+      systemd:
+        name: snmpd
+        enabled: yes
+        state: restarted
+
+# Set up cron job
+- name: Set up cron job
+  hosts: localhost
+  become: yes
+  tasks:
+    - name: Copy librenms cron job
+      copy:
+        src: /opt/librenms/dist/librenms.cron
+        dest: /etc/cron.d/librenms
+
+    - name: Enable the scheduler
+      copy:
+        src: /opt/librenms/dist/librenms-scheduler.service
+        dest: /etc/systemd/system/librenms-scheduler.service
+
+    - name: Enable and start librenms-scheduler.timer
+      systemd:
+        name: librenms-scheduler.timer
+        enabled: yes
+        state: started
+
+# Copy logrotate config
+- name: Copy logrotate config
+  hosts: localhost
+  become: yes
+  tasks:
+    - name: Copy librenms logrotate config
+      copy:
+        src: /opt/librenms/misc/librenms.logrotate
+        dest: /etc/logrotate.d/librenms
+
+# Print completion message
+- name: Print completion message
+  hosts: localhost
+  tasks:
+    - name: Print completion message
+      debug:
+        msg: "LibreNMS setup completed! Visit http://librenms.example.com/install to continue the installation."
