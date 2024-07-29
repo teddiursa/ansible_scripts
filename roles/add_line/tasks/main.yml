@@ -1,0 +1,6 @@
+---
+
+- name: Add line to file
+  ansible.builtin.lineinfile:
+    path: "{{ file_path }}"
+    line: "{{ line }}"

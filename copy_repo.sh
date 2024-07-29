@@ -3,7 +3,7 @@
 # Script to copy over files from working directory and remove any files with private information
 
 # Copy over new files
-rsync -av --progress ~/projects/ansible_proxmox/ ~/projects/ansible_scripts/ --exclude .git --exclude .vscode --exclude='*.tar' --exclude='*.png'
+rsync -av --progress ~/projects/ansible_proxmox/ ~/projects/ansible_scripts/ --exclude .git --exclude .vscode --exclude='*.tar' 
 
 #!/bin/bash
 
