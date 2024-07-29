@@ -6,6 +6,7 @@
 - name: Install cifs-utils
   ansible.builtin.package:
     name: cifs-utils
+    update_cache: true
 
 - name: Make mount directory
   ansible.builtin.file:

@@ -3,12 +3,12 @@
 # Script to copy over files from working directory and remove any files with private information
 
 # Copy over new files
-rsync -av --progress ~/ansible_proxmox/ ~/ansible_scripts/ --exclude .git --exclude .vscode --exclude='*.tar' --exclude='*.png'
+rsync -av --progress ~/projects/ansible_proxmox/ ~/projects/ansible_scripts/ --exclude .git --exclude .vscode --exclude='*.tar' --exclude='*.png'
 
 #!/bin/bash
 
 # List of files to remove
-files=("AD_remove.yml" "AD.yml" "ansible.cfg" "create_role.sh" "inventory.yml" "jellyfin_remove.yml" "jellyfin.yml" "roles.yml" "test.yml" "tftp_remove.yml" "tftp.yml" "TODO")
+files=("notes" "AD_remove.yml" "AD.yml" "ansible.cfg" "create_role.sh" "inventory.yml" "jellyfin_remove.yml" "jellyfin.yml" "roles.yml" "test.yml" "tftp_remove.yml" "tftp.yml" "TODO" "smallstep.yml" "eve.yml" )
 
 # Loop over the array and remove each file
 for file in "${files[@]}"

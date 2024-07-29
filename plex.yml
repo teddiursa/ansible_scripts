@@ -1,12 +1,14 @@
 --- 
 
-- name: Create LXC for docker
+- name: Create LXC for plex
   hosts: proxmox
   become: true
   vars:
     hostname: plexAnsible
-    vmid: 510
-    ip: '{"net0":"name=eth0,bridge=vmbr0,ip=192.168.55.10/24,gw=192.168.55.1"}'
+    vmid: 692
+    ip: '192.168.55.92/24'
+    gw: '192.168.55.1'
+    vlan: '65'
     ostemplate: "local:vztmpl/debian-11-standard_11.7-1_amd64.tar.zst"
     storage: nvme
     disk: 'nvme:8'
@@ -21,6 +23,29 @@
       - nesting=1
   roles:
     - proxmox
+
+- name: Add line to allow gpu passthrough
+  hosts: proxmox
+  vars:
+    file_path: "/etc/pve/lxc/610.conf"
+    line: "lxc.cgroup2.devices.allow: c 226:* rwm"
+  roles:
+    - role: add_line
+
+- name: Add second line to allow gpu passthrough
+  hosts: proxmox
+  vars:
+    file_path: "/etc/pve/lxc/610.conf"
+    line: "lxc.mount.entry: /dev/dri dev/dri none bind,optional,create=dir"
+  roles:
+    - role: add_line
+
+- name: Restart LXC
+  hosts: proxmox
+  vars:
+    vmid: "610"
+  roles:
+    - role: restart_lxc
 
 - name: Install ansible user
   hosts: plex

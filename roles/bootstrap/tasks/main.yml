@@ -1,46 +1,66 @@
 ---
+
 # Creates user for ansible and generic greg user
 # Adds them to sudo and also adds ssh key for ansible
 # Sets NTP server for non LXC containers
+# Creates MOTD.sh in /etc/profile.d
+# MOTD tested for debian, alpine, and RHEL
 
-- name: Wait for connection
-  ansible.builtin.wait_for_connection:
-    delay: 5
-    timeout: 300
+- name: Run updates
+  ansible.builtin.package:
+    update_cache: true
 
 - name: Set vault file
   ansible.builtin.include_vars:
     file: group_vars/bootstrap.yml
 
 - name: Install sudo
-  ansible.builtin.apt:
+  ansible.builtin.package:
     name: sudo
   register: sudo_installed
 
 - name: First boot
   block:
+
+  - name: Include the vault file
+    include_vars:
+      file: ~/projects/ansible_proxmox/group_vars/proxmox.yml
+      name: vault
+
+  - name: Generate a random salt
+    ansible.builtin.set_fact:
+      salt: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters') }}"
+
   - name: Generate hashed password
     ansible.builtin.set_fact:
-      hashed_password: "{{ api_password | password_hash('sha512') }}"
+      hashed_password: "{{ api_password | password_hash('sha512', salt) }}"
+
 
   - name: Create ansible group
     ansible.builtin.group:
       name: ansible
       state: present
+    when: ansible_distribution != "Alpine"
 
   - name: Create user ansible
     ansible.builtin.user:
       name: ansible
       groups: ansible
       shell: /bin/bash
+      append: true
       create_home: true
       password: "{{ hashed_password }}"
 
-  - name: Add ssh key for test ansible
+  - name: Ensure dependencies are installed
+    ansible.builtin.package:
+      name: py3-paramiko bash
+      state: present
+    when: ansible_distribution  == "Alpine"
+
+  - name: Add ssh key for ansible user
     ansible.posix.authorized_key:
       user: ansible
-      key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINOJj6Bi27ocohN68teE3yeu5ABXGbdxxySwiFvnOqiB ansible"
-
+      key: "{{ vault.public_key }}"
 
   - name: Add ansible to sudoers
     community.general.sudoers:
@@ -53,6 +73,7 @@
     ansible.builtin.group:
       name: greg
       state: present
+    when: ansible_distribution  != "Alpine"
 
   - name: Create user greg
     ansible.builtin.user:
@@ -61,21 +82,13 @@
       shell: /bin/bash
       create_home: true
       password: "{{ hashed_password }}"
-
-  - name: Add ansible to sudoers
+    
+  - name: Add greg to sudoers
     community.general.sudoers:
       name: Sudo_greg
       state: present
       user: greg
       commands: ALL
-
-  - name: Create the cron job for ssh directory bug
-    ansible.builtin.cron:
-      name: ssh_restart
-      job: "@reboot mkdir -p -m0755 /var/run/sshd && systemctl restart ssh.service"
-      user: ansible
-      cron_file: /etc/cron.d/sshd_cron
-      state: present
 
   - name: Set virtualization type variable
     ansible.builtin.set_fact:
@@ -85,7 +98,7 @@
     block:
       - name: Set NTP server for timesyncd
         ansible.builtin.template:
-          src: ~/ansible_proxmox/roles/bootstrap/templates/timesyncd.j2
+          src: ~/projects/ansible_proxmox/roles/bootstrap/templates/timesyncd.j2
           dest: /etc/systemd/timesyncd.conf
           owner: root
           group: root
@@ -101,3 +114,19 @@
     when: not is_container
 
   when: sudo_installed.changed
+
+# MOTD has hard coded int names of eth0 and ens18, for containers and VMs respectively
+# Need to change ens18 to host interface name if it changes
+
+- name: Set MOTD
+  block:
+  - name: Set MOTD bash script
+    ansible.builtin.copy:
+      src: ~/projects/ansible_proxmox/roles/bootstrap/files/motd.sh
+      dest: /etc/profile.d/motd.sh
+      mode: 0755
+
+  - name: Set MOTD file
+    ansible.builtin.copy:
+      src: ~/projects/ansible_proxmox/roles/bootstrap/files/motd.txt
+      dest: /etc/motd

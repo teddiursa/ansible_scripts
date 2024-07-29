@@ -14,7 +14,7 @@
 
 - name: Copy config file
   ansible.builtin.template:
-    src: ~/ansible_proxmox/roles/authentik/files/docker-compose.yml
+    src: ~/projects/ansible_proxmox/roles/authentik/files/docker-compose.yml
     dest: /home/ansible/authentik/docker-compose.yml
     owner: ansible
     group: ansible
@@ -23,7 +23,7 @@
 
 - name: Configure .env file with template
   ansible.builtin.template:
-    src: /home/greg/ansible_proxmox/roles/authentik/templates/env.j2
+    src: /home/greg/projects/ansible_proxmox/roles/authentik/templates/env.j2
     dest: /home/ansible/authentik/.env
     owner: ansible
     group: ansible
@@ -61,13 +61,13 @@
 
     - name: Unzip archived authentik data
       ansible.builtin.unarchive:
-        src: '/home/greg/ansible_proxmox/roles/authentik/files/database.tar'
+        src: '/home/greg/projects/ansible_proxmox/roles/authentik/files/database.tar'
         dest: /var/lib/docker/volumes/
       changed_when: true
 
     - name: Unzip archived redis data
       ansible.builtin.unarchive:
-        src: '/home/greg/ansible_proxmox/roles/authentik/files/redis.tar'
+        src: '/home/greg/projects/ansible_proxmox/roles/authentik/files/redis.tar'
         dest: /var/lib/docker/volumes/
       changed_when: true
 

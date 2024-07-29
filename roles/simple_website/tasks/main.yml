@@ -1,12 +1,12 @@
 ---
 
 - name: Install python3
-  apt: 
+  ansible.builtin.package:
     name: python3 
     state: present
 
 - name: Ensure python3 is at the latest version
-  apt: 
+  ansible.builtin.package:
     name: python3 
     state: latest
 
@@ -17,19 +17,19 @@
     mode: '0755'
 
 - name: Copy html file to server
-  copy:
-    src: /home/greg/ansible_proxmox/roles/form_website/files/index.html
+  ansible.builtin.copy:
+    src: /home/greg/projects/ansible_proxmox/roles/simple_website/files/index.html
     dest: /var/website
     mode: '0644'
 
 - name: Copy css file to server
-  copy:
-    src: /home/greg/ansible_proxmox/roles/form_website/files/form.css
+  ansible.builtin.copy:
+    src: /home/greg/projects/ansible_proxmox/roles/simple_website/files/form.css
     dest: /var/website
     mode: '0644'
 
 - name: Create Python script to start HTTP server
-  copy:
+  ansible.builtin.copy:
     content: |
       #!/usr/bin/env python3
       import http.server
@@ -51,6 +51,6 @@
     mode: '0755'
 
 - name: Start http server
-  shell: nohup python3 /var/website/start_server.py > /dev/null 2>&1 &
+  ansible.builtin.shell: nohup python3 /var/website/start_server.py > /dev/null 2>&1 &
   args:
     executable: /bin/bash

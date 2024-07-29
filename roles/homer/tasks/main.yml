@@ -33,7 +33,7 @@
 
 - name: Copy config file
   ansible.builtin.template:
-    src: ~/ansible_proxmox/roles/homer/templates/config.j2
+    src: ~/projects/ansible_proxmox/roles/homer/templates/config.j2
     dest: /opt/homer/assets/config.yml
     owner: ansible
     group: ansible
@@ -42,7 +42,7 @@
 
 - name: Copy icons
   ansible.builtin.copy:
-    src: ~/ansible_proxmox/roles/homer/files/
+    src: ~/projects/ansible_proxmox/roles/homer/files/
     dest: /opt/homer/assets/icons
     owner: ansible
     group: ansible
@@ -50,17 +50,28 @@
   changed_when: true
 
 - name: Install python3
-  ansible.builtin.apt:
+  ansible.builtin.package:
     name: python3
 
 - name: Copy config file
   ansible.builtin.template:
-    src: ~/ansible_proxmox/roles/homer/templates/service.j2
+    src: ~/projects/ansible_proxmox/roles/homer/templates/service.j2
     dest: /etc/systemd/system/homer.service
     owner: root
     group: root
     mode: '0644'
   changed_when: true
+  when: ansible_distribution != "Alpine"
+
+- name: Copy config file alpine
+  ansible.builtin.template:
+    src: ~/projects/ansible_proxmox/roles/homer/templates/openrc.j2
+    dest: /etc/init.d/homer
+    owner: root
+    group: root
+    mode: '0755'
+  changed_when: true
+  when: ansible_distribution == "Alpine"
 
 - name: Start homer
   ansible.builtin.systemd_service:
@@ -68,3 +79,12 @@
     state: started
     enabled: true
   changed_when: true
+  when: ansible_distribution != "Alpine"
+
+- name: Start homer alpine
+  ansible.builtin.service:
+    name: homer
+    state: started
+    enabled: true
+  become: true
+  when: ansible_distribution == "Alpine"

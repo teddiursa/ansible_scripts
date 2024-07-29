@@ -24,9 +24,9 @@
 
 - name: Download Jellyfin archive
   ansible.builtin.get_url:
-    url: "https://repo.jellyfin.org/releases/server/linux/stable/combined/jellyfin_{{ jellyfin_version }}_amd64.tar.gz"
+    url: "https://repo.jellyfin.org/files/server/linux/latest-stable/amd64/jellyfin_{{ jellyfin_version }}-amd64.tar.gz"
     dest: "/opt/jellyfin/jellyfin_{{ jellyfin_version }}_amd64.tar.gz"
-    checksum: "sha256:https://repo.jellyfin.org/releases/server/linux/stable/combined/jellyfin_{{ jellyfin_version }}_amd64.tar.gz.sha256sum"
+    checksum: "sha256:https://repo.jellyfin.org/files/server/linux/latest-stable/amd64/jellyfin_{{ jellyfin_version }}-amd64.tar.gz.sha256sum"
     owner: jellyfin
     group: jellyfin
     mode: 0644
@@ -69,10 +69,10 @@
     group: "jellyfin"
     mode: "{{ item.mode }}"
   loop:
-    - src: "/home/greg/ansible_proxmox/roles/jellyfin/templates/jellyfin.sh.j2"
+    - src: "/home/greg/projects/ansible_proxmox/roles/jellyfin/templates/jellyfin.sh.j2"
       dest: "/usr/local/bin/jellyfin.sh"
       mode: '0755'
-    - src: "/home/greg/ansible_proxmox/roles/jellyfin/templates/jellyfin.service.j2"
+    - src: "/home/greg/projects/ansible_proxmox/roles/jellyfin/templates/jellyfin.service.j2"
       dest: "/etc/systemd/system/jellyfin.service"
       mode: '0644'
 
@@ -92,10 +92,10 @@
     url: "https://repo.jellyfin.org/releases/server/debian/versions/jellyfin-ffmpeg/6.0.1-3/jellyfin-ffmpeg6_6.0.1-3-bullseye_amd64.deb"
     dest: "/tmp/jellyfin-ffmpeg.deb"
 
-- name: Install jellyfin-ffmpeg package
-  ansible.builtin.apt:
-    deb: "/tmp/jellyfin-ffmpeg.deb"
-    state: present
+# - name: Install jellyfin-ffmpeg package
+#   ansible.builtin.apt:
+#     deb: "/tmp/jellyfin-ffmpeg.deb"
+#     state: present
 
 # - name: Remove ffmpeg tmp package
 #   ansible.builtin.file:
@@ -116,7 +116,7 @@
 
 #   - name: Unzip config data
 #     ansible.builtin.unarchive:
-#       src: '/home/greg/ansible_proxmox/roles/jellyfin/files/jellyfin.tar'
+#       src: '/home/greg/projects/ansible_proxmox/roles/jellyfin/files/jellyfin.tar'
 #       dest: '/opt'
 #       extra_opts: --format=posix
 #       owner: jellyfin
@@ -150,3 +150,33 @@
 - name: Upgrade packages
   ansible.builtin.apt:
     upgrade: true
+
+- name: Install necessary packages for hardware acceleration
+  ansible.builtin.apt:
+    name: 
+      - vainfo
+      - intel-media-va-driver
+      - i965-va-driver
+      # - libva-drm2
+      # - libva-x11-2
+
+- name: Add the necessary permissions
+  ansible.builtin.shell:
+    cmd: |
+      usermod -aG video jellyfin
+      echo 'SUBSYSTEM=="drm", KERNEL=="renderD*", GROUP="video", MODE="0660"' > /etc/udev/rules.d/99-jellyfin.rules
+
+- name: Restart the system to apply changes
+  ansible.builtin.reboot:
+
+# stored in /opt/jellyfin
+
+# had to add ffmpeg path in /opt/jellyfin/config/encoding.xml
+#   <EncoderAppPath>/usr/lib/jellyfin-ffmpeg/ffmpeg</EncoderAppPath>
+#   <EncoderAppPathDisplay>/usr/lib/jellyfin-ffmpeg/ffmpeg</EncoderAppPathDisplay>
+
+# apt install jellyfin-ffmpeg6
+# this url/.deb package in case it doesn't work
+
+
+# /usr/lib/jellyfin-ffmpeg/ffmpeg  

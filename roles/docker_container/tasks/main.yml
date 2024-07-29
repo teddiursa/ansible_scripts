@@ -22,6 +22,7 @@
       - "{{ item.key }}:{{ item.value }}"
     ports: "{{ container_ports }}"
     working_dir: "{{ container_workdir }}"
+    env: "{{ container_env }}"
     networks:
       - name: "{{ network_name }}"
     restart_policy: unless-stopped
@@ -33,6 +34,7 @@
     image: "{{ image }}"
     ports: "{{ container_ports }}"
     working_dir: "{{ container_workdir }}"
+    env: "{{ container_env }}"
     networks:
       - name: "{{ network_name }}"
     restart_policy: unless-stopped
@@ -83,6 +85,7 @@
         - "{{ item.key }}:{{ item.value }}"
       ports: "{{ container_ports }}"
       working_dir: "{{ container_workdir }}"
+      env: "{{ container_env }}"
       networks:
         - name: "{{ network_name }}"
       restart_policy: unless-stopped

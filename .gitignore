@@ -4,10 +4,10 @@ TODO
 group_vars/
 *.tar
 *.zip
-*.png
-*.svg
 *.db
 *.ini
 graylog.conf
 node-id
 prometheus.yml
+.*
+*.env

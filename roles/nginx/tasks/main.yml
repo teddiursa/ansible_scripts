@@ -50,13 +50,13 @@
 
 - name: Unzip container backup data
   ansible.builtin.unarchive:
-    src: '/home/greg/ansible_proxmox/roles/nginx/files/data.tar'
+    src: '/home/greg/projects/ansible_proxmox/roles/nginx/files/data.tar'
     dest: '/home/ansible/nginx'
   changed_when: true
 
 - name: Unzip container backup data
   ansible.builtin.unarchive:
-    src: '/home/greg/ansible_proxmox/roles/nginx/files/letsencrypt.tar'
+    src: '/home/greg/projects/ansible_proxmox/roles/nginx/files/letsencrypt.tar'
     dest: '/home/ansible/nginx'
   changed_when: true
 

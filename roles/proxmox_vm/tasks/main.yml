@@ -15,39 +15,67 @@
     msg: "VM with ID {{ vmid }} already exists"
   when: vm_status.rc != 0 and 'already exists' in vm_status.stderr
 
-- name: Create new VM
-  community.general.proxmox:
-    vmid: "{{ vmid }}"
-    hostname: "{{ hostname }}"
-    node: pve
-    api_user: ansible@pam
-    api_password: "{{ api_password }}"
-    api_host: 127.0.0.1
-    password: "{{ api_password }}"
-    api_token_id: "{{ api_token_id }}"
-    api_token_secret: "{{ api_token_secret }}"
-    ostype: "{{ ostype }}"
-    ostemplate: "{{ ostemplate }}"
-    validate_certs: false
-    storage: "{{ storage }}"
-    disk: "{{ disk }}"
-    cpus: "{{ cpus }}"
-    cores: "{{ cores }}"
-    memory: "{{ memory }}"
-    netif: "{{ ip }}"
-    description: "{{ description }}"
-    pubkey: "{{ public_key }}"
-    force: true
-    onboot: "{{ boot }}"
-    features: "{{ features }}"
-    unprivileged: "{{ unprivileged }}"
-    timezone: UTC
+- name: Create new Virtual Machine
+  block: 
+    - name: Without vlan id
+      community.general.proxmox_kvm:
+        vmid: "{{ vmid }}"
+        hostname: "{{ hostname }}"
+        node: pve
+        api_user: root@pam
+        api_password: "{{ api_password }}"
+        api_host: 127.0.0.1
+        password: "{{ api_password }}"
+        api_token_id: "{{ api_token_id }}"
+        api_token_secret: "{{ api_token_secret }}"
+        ostemplate: "{{ ostemplate }}"
+        validate_certs: false
+        storage: "{{ storage }}"
+        disk: "{{ disk }}"
+        cpus: "{{ cpus }}"
+        cores: "{{ cores }}"
+        memory: "{{ memory }}"
+        netif: {"net0":"name=eth0,bridge=vmbr0,ip={{ ip }},gw={{ gw }}"}
+        description: "{{ description }}"
+        pubkey: "{{ public_key }}"
+        force: true
+        onboot: "{{ boot }}"
+        features: "{{ features }}"
+        unprivileged: "{{ unprivileged }}"
+      when: vlan is not defined
+
+    - name: With vlan id
+      community.general.proxmox_kvm:
+        vmid: "{{ vmid }}"
+        hostname: "{{ hostname }}"
+        node: pve
+        api_user: root@pam
+        api_password: "{{ api_password }}"
+        api_host: 127.0.0.1
+        password: "{{ api_password }}"
+        api_token_id: "{{ api_token_id }}"
+        api_token_secret: "{{ api_token_secret }}"
+        ostemplate: "{{ ostemplate }}"
+        validate_certs: false
+        storage: "{{ storage }}"
+        disk: "{{ disk }}"
+        cpus: "{{ cpus }}"
+        cores: "{{ cores }}"
+        memory: "{{ memory }}"
+        netif: {"net0":"name=eth0,bridge=vmbr0,ip={{ ip }},gw={{ gw }},tag={{ vlan }}"}
+        description: "{{ description }}"
+        pubkey: "{{ public_key }}"
+        force: true
+        onboot: "{{ boot }}"
+        features: "{{ features }}"
+        unprivileged: "{{ unprivileged }}"
+      when: vlan is defined
   when: vm_status.rc == 0 and 'already exists' not in vm_status.stderr
 
 - name: Start the VM
-  community.general.proxmox:
+  community.general.proxmox_kvm:
     vmid: "{{ vmid }}"
     api_host: 127.0.0.1
-    api_user: ansible@pam
+    api_user: root@pam
     api_password: "{{ api_password }}"
     state: started

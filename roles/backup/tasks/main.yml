@@ -47,9 +47,19 @@
 
 - name: Backup Folder
   block:
-  - name: Archive the Remote directory
+  # - name: Archive the Remote directory
+  #   ansible.builtin.command:
+  #     cmd: tar --exclude='*.log' --exclude='*.0*' -czf /tmp/{{ tar_name }} -C {{ source }} {{ folder_name }}
+
+  - name: Archive the Remote directory with exclude
+    ansible.builtin.command:
+      cmd: tar --exclude='*.log' --exclude='*.0*' {% for folder in exclude_folders %} --exclude={{ folder }} {% endfor %} -czf /tmp/{{ tar_name }} -C {{ source }} {{ folder_name }}
+    when: exclude_folders is defined
+
+  - name: Archive the Remote directory without exclude
     ansible.builtin.command:
       cmd: tar --exclude='*.log' --exclude='*.0*' -czf /tmp/{{ tar_name }} -C {{ source }} {{ folder_name }}
+    when: exclude_folders is not defined
 
   - name: Copy Archive
     ansible.builtin.fetch:

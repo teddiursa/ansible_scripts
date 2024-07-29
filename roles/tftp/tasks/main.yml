@@ -1,58 +1,31 @@
 ---
 # Installs tftp server
-# Disables IPv6
-# Tftp Directory is in /var/lib/tftpboot
+# Tftp Directory is in /var/tftpboot
 # Adds an empty test file for easier testing
 
 - name: Install tftpd-hpa
-  tags: tftp,Debian
-  ansible.builtin.apt:
-    name: tftpd-hpa
-    policy_rc_d: 101
-
-- name: Set as IPv4
-  tags: tftp,Debian
-  ansible.builtin.lineinfile:
-    path: /etc/default/tftpd-hpa
-    regex: '^TFTP_ADDRESS'
-    line: TFTP_ADDRESS="0.0.0.0:69"
-
-- name: Disable IPv6
-  tags: tftp,Debian
-  ansible.builtin.lineinfile:
-    path: /etc/default/tftpd-hpa
-    regex: '^TFTP_OPTIONS'
-    line: TFTP_OPTIONS="--secure -4 -c"
-
-- name: Change config directory
-  tags: tftp,Debian
-  ansible.builtin.lineinfile:
-    path: /etc/default/tftpd-hpa
-    regex: '^TFTP_DIRECTORY'
-    line: TFTP_DIRECTORY="/var/lib/tftpboot"
-
-- name: Create tftp directory
-  tags: tftp,Debian
-  ansible.builtin.file:
-    path: /var/lib/tftpboot
-    state: directory
-    owner: nobody
-    group: nogroup
-    mode: '777'
-    recurse: true
-
-- name: Create test file
-  tags: tftp,Debian
-  ansible.builtin.file:
-    path: /var/lib/tftpboot/test
-    state: touch
-    owner: tftp
-    group: tftp
-    mode: '777'
+  tags: tftp
+  ansible.builtin.package:
+    name: tftp-hpa
 
 - name: Start tftpd-hpa
-  tags: tftp,Debian
   ansible.builtin.service:
-    name: tftpd-hpa
-    state: restarted
-    enabled: true
+    name: in.tftpd
+    state: started
+
+- name: Add tftpd-hpa to default runlevel
+  ansible.builtin.command:
+    cmd: rc-update add in.tftpd default
+
+- name: Start tftpd-hpa
+  ansible.builtin.service:
+    name: in.tftpd
+    state: started
+
+- name: Create test file
+  ansible.builtin.file:
+    path: /var/tftpboot/test
+    state: touch
+    owner: root
+    group: root
+    mode: '777'

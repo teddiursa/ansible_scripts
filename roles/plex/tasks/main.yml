@@ -44,7 +44,7 @@
 # Rather large file, even withouth cached folder
 - name: Unzip config data
   ansible.builtin.unarchive:
-    src: '/home/greg/ansible_proxmox/roles/plex/files/plex.tar'
+    src: '/home/greg/projects/ansible_proxmox/roles/plex/files/plex.tar'
     dest: '/var/lib'
     extra_opts: --format=posix
   changed_when: true
@@ -71,7 +71,7 @@
 
 - name: Enable Plex repo
   ansible.builtin.copy:
-    src: /home/greg/ansible_proxmox/roles/plex/files/repo.j2
+    src: /home/greg/projects/ansible_proxmox/roles/plex/files/repo.j2
     dest: /etc/apt/sources.list.d/plexmediaserver.list
 
 - name: Import PlexSign.key
@@ -99,3 +99,21 @@
     url: "http://localhost:32400/library/sections/2/refresh?X-Plex-Token={{ token }}"
     method: GET
     status_code: 200
+
+- name: Install necessary packages for hardware acceleration
+  ansible.builtin.apt:
+    name: 
+      - vainfo
+      - intel-media-va-driver
+      - i965-va-driver
+      # - libva-drm2
+      # - libva-x11-2
+
+- name: Add the necessary permissions
+  ansible.builtin.shell:
+    cmd: |
+      usermod -aG video plex
+      echo 'SUBSYSTEM=="drm", KERNEL=="renderD*", GROUP="video", MODE="0660"' > /etc/udev/rules.d/99-plex.rules
+
+- name: Restart the system to apply changes
+  ansible.builtin.reboot:

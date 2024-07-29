@@ -1,16 +1,21 @@
 ---
+# Installs rsyslog and sets it to send logs to IP at syslog_server_ip
+# currently uses port 1514, will change to variable if needed
 
 - name: Install Rsyslog
-  apt:
+  ansible.builtin.package:
     name: rsyslog
     state: present
 
 - name: Configure Rsyslog to send logs to external server
-  lineinfile:
+  ansible.builtin.blockinfile:
     path: /etc/rsyslog.conf
-    line: "*.info @{{ syslog_server_ip }}:1514"
+    block: |
+      # Ansible:
+      # This line configures Rsyslog to send logs to {{ syslog_server_ip }}
+      *.info @{{ syslog_server_ip }}:1514
 
 - name: Restart Rsyslog service
-  service:
+  ansible.builtin.service:
     name: rsyslog
     state: restarted
