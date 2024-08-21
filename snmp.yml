@@ -1,0 +1,82 @@
+---
+
+# Required variables:
+# contact
+# location
+
+#   for v2c:
+#     snmp_community
+
+#   for v3:
+#     v3: true
+
+#   for traps (v2):
+#      snmp_community
+#      server_ip
+
+#     from vault file
+#       auth_phrase
+#       priv_phrase
+#       username
+#       auth_level
+#       snmp_community
+
+- name: Install snmp v3 docker
+  hosts: docker
+  remote_user: ansible
+  become: true
+  pre_tasks:
+    - name: Include vault variables
+      ansible.builtin.include_vars:
+        file: group_vars/snmp.yml
+      no_log: true
+  vars:
+    contact: 'greg <greg.choww@gmail.com>'
+    location: 'Sunnyvale, CA'
+    v3: true
+    server_ip: 192.168.65.100
+    extra_arguments:
+      - "view systemonly included .1"
+      - "# add sudo to extend command"
+      - "extend docker /etc/snmp/docker-stats.py"
+  roles:
+    - snmp
+  tags: docker
+
+- name: Install snmp v3 proxmox
+  hosts: proxmox
+  pre_tasks:
+    - name: Include vault variables
+      ansible.builtin.include_vars:
+        file: group_vars/snmp.yml
+      no_log: true
+  vars:
+    contact: 'greg <greg.choww@gmail.com>'
+    location: 'Sunnyvale, CA'
+    v3: true
+    server_ip: 192.168.65.100
+    extra_arguments:
+      - "view systemonly included .1"
+      - "# add sudo to extend command"
+      - "extend proxmox /usr/bin/sudo /usr/local/bin/proxmox"
+  roles:
+    - snmp
+  tags: proxmox
+
+- name: Install snmp v3
+  hosts: all,!proxmox,!docker
+  remote_user: ansible
+  become: true
+  pre_tasks:
+    - name: Include vault variables
+      ansible.builtin.include_vars:
+        file: group_vars/snmp.yml
+      no_log: true
+  vars:
+    contact: 'greg <greg.choww@gmail.com>'
+    location: 'Proxmox'
+    v3: true
+    server_ip: 192.168.65.100
+  roles:
+    - snmp
+  tags: all

@@ -1,0 +1,92 @@
+---
+
+- name: Set vault file
+  ansible.builtin.include_vars:
+    file: group_vars/proxmox.yml
+
+- name: Make homepage dir
+  ansible.builtin.file:
+    path: /home/ansible/homepage
+    state: directory
+    owner: ansible
+    group: ansible
+    mode: '0644'
+
+- name: Copy config file
+  ansible.builtin.template:
+    src: ~/projects/ansible_proxmox/roles/homepage/templates/homepage.j2
+    dest: /home/ansible/homepage/docker-compose.yml
+    owner: ansible
+    group: ansible
+    mode: '0644'
+  changed_when: true
+
+- name: Make images dir
+  ansible.builtin.file:
+    path: /home/ansible/homepage/images
+    state: directory
+    owner: ansible
+    group: ansible
+    mode: '0644'
+
+- name: Copy images to docker
+  ansible.builtin.copy:
+    src: ~/projects/ansible_proxmox/roles/homepage/files/images/
+    dest: /home/ansible/homepage/images
+    owner: ansible
+    group: ansible
+    mode: '0644'
+
+- name: Make icons dir
+  ansible.builtin.file:
+    path: /home/ansible/homepage/icons
+    state: directory
+    owner: ansible
+    group: ansible
+    mode: '0644'
+
+- name: Copy icons to docker
+  ansible.builtin.copy:
+    src: ~/projects/ansible_proxmox/roles/homepage/files/icons/
+    dest: /home/ansible/homepage/icons
+    owner: ansible
+    group: ansible
+    mode: '0644'
+
+
+- name: Start homepage with docker compose
+  ansible.builtin.command:
+    chdir: /home/ansible/homepage
+    cmd: docker compose up -d
+  changed_when: true
+  when: not restore
+
+- name: Restore backup configuration
+  when: restore
+  block:
+    - name: Install tar
+      ansible.builtin.apt:
+        name: tar
+
+    - name: Stop container to load backup
+      ansible.builtin.command:
+        chdir: /home/ansible/homepage
+        cmd: docker compose down
+      changed_when: true
+
+    - name: Remove old homepage volume
+      ansible.builtin.file:
+        path: '/opt/homepage'
+        state: absent
+
+    - name: Unzip archived homepage volume
+      ansible.builtin.unarchive:
+        src: '/home/greg/projects/ansible_proxmox/roles/homepage/files/homepage.tar'
+        dest: /opt/
+      changed_when: true
+
+    - name: Start homepage with docker compose
+      ansible.builtin.command:
+        chdir: /home/ansible/homepage
+        cmd: docker compose up -d
+      changed_when: true

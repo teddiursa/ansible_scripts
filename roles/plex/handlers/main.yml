@@ -1,0 +1,17 @@
+---
+
+- name: Start plex service
+  ansible.builtin.service:
+    name: plexmediaserver
+    state: started
+
+
+- name: Stop plex service
+  ansible.builtin.service:
+    name: plexmediaserver
+    state: stopped
+
+- name: Remove old data
+  ansible.builtin.file:
+    path: '/var/lib/plexmediaserver'
+    state: absent
