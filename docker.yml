@@ -1,6 +1,6 @@
 ---
 
-# Creates docker container, installs docker containers, and load their backups.
+# Creates docker container, run, and load their backups.
 # NOTE: requires root for LXC options needed for docker
 
 - name: Create LXC for docker
@@ -72,6 +72,7 @@
     container_command: null
     volumes:
       uptime-kuma: "/app/data"
+      "/var/run/docker.sock": "/var/run/docker.sock"
     container_env: {}
     container_workdir:
     archive_name: 'utk.tar'
@@ -94,7 +95,7 @@
   gather_facts: false
   become: true
   vars:
-    - restore: true
+    restore: true
   roles:
     - graylog
   tags: graylog
@@ -194,23 +195,87 @@
   remote_user: ansible
   gather_facts: false
   become: true
-  vars: 
+  vars:
     container_name: grafana
     cmd: 'grafana cli plugins install grafana-github-datasource'
   roles:
     - docker_run
   tags: grafana
 
-- name: Install authentik using docker compose
+
+- name: Install watchtower
+  hosts: docker
+  remote_user: ansible
+  gather_facts: false
+  become: true
+  pre_tasks:
+    - name: Include vault variables
+      ansible.builtin.include_vars:
+        file: group_vars/watchtower.yml
+      no_log: true
+  vars:
+    image: containrrr/watchtower
+    image_tag:
+    container_name: watchtower
+    container_ports: 8080:8080
+    container_host_group:
+    network_name: bridge
+    container_command:
+    volumes:
+      /var/run/docker.sock: "/var/run/docker.sock"
+    container_env:
+      WATCHTOWER_HTTP_API_METRICS: "true"
+      WATCHTOWER_HTTP_API_TOKEN: "{{ api }}"
+    container_workdir:
+  roles:
+    - docker_container
+  tags: watchtower
+
+- name: Install overseerr
   hosts: docker
   remote_user: ansible
   gather_facts: false
   become: true
   vars:
-    - restore: true
+    image: sctx/overseerr
+    image_tag:
+    container_name: overseerr
+    container_ports: 5055:5055
+    container_host_group:
+    network_name: bridge
+    container_command:
+    volumes:
+      overseerr: "/app/config"
+    container_env:
+      Log_Level: "debug"
+      TZ: "UTC"
+      PORT: "5055"
+    container_workdir:
   roles:
-    - authentik
-  tags: authentik
+    - docker_container
+  tags: overseerr
+
+- name: Install homepage using docker compose
+  hosts: docker
+  remote_user: ansible
+  gather_facts: false
+  become: true
+  vars:
+    restore: true
+  roles:
+    - homepage
+  tags: homepage
+
+# - name: Install authentik using docker compose
+#   hosts: docker
+#   remote_user: ansible
+#   gather_facts: false
+#   become: true
+#   vars:
+#     restore: true
+#   roles:
+#     - authentik
+#   tags: authentik
 
 - name: Add syslog config
   hosts: docker
@@ -245,7 +310,7 @@
 #     container_host_group:
 #     network_name: bridge
 #     container_command: null
-#     volumes: 
+#     volumes:
 #       datastore-volume: "/datastore"
 #     container_env: {}
 #     container_workdir:
@@ -253,39 +318,3 @@
 #   roles:
 #     - docker_container
 #   tags: changedetection
-
-# - name: Install LibreNMS
-#   hosts: docker
-#   remote_user: ansible
-#   gather_facts: false
-#   become: true
-#   vars:
-#     image: librenms/librenms
-#     image_tag: latest
-#     container_name: librenms
-#     container_ports: 8000:8000
-#     container_host_group:
-#     network_name: bridge
-#     container_command: null
-#     volumes: 
-#       data: "/data"
-#     container_env: {
-#       DB_HOST: "db",
-#       DB_PASSWORD: "test"
-#     }
-#     container_workdir:
-#     # archive_name: null
-#   roles:
-#     - docker_container
-#   tags: librenms
-
-- name: Install librenms using docker compose
-  hosts: docker
-  remote_user: ansible
-  gather_facts: false
-  become: true
-  vars:
-    - restore: false
-  roles:
-    - librenms
-  tags: librenms

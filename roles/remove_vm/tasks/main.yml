@@ -3,7 +3,7 @@
 # Uses a "loop_list" variable to stop multiple containers if needed
 
 - name: Remove VM
-  proxmox_kvm:
+  community.general.proxmox_kvm:
     api_user: ansible@pam
     api_password: "{{ api_token_secret }}"
     api_host: 127.0.0.1

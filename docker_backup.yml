@@ -1,8 +1,8 @@
 ---
-# Backs up current docker container files
+# Backs up current docker container files, as tar
 # WARNING: WILL DELETE PREVIOUS BACKUP FILES
 
-# Has tags if you just want to backup certain container
+# Has tags if you just want to backup certain containers
 
 - name: Back up nginx lets encrypt
   hosts: docker
@@ -16,7 +16,7 @@
   roles:
     - backup
   tags: nginx
-  
+
 - name: Back up nginx data
   hosts: docker
   remote_user: ansible
@@ -32,13 +32,13 @@
   roles:
     - backup
   tags: nginx
-  
+
 - name: Backup grafana db
   hosts: docker
   remote_user: ansible
   gather_facts: false
   become: true
-  vars: 
+  vars:
     container_name: grafana
     destination: /home/greg/projects/ansible_proxmox/roles/docker_container/files/grafana.db
     source: /var/lib/grafana/grafana.db
@@ -54,7 +54,7 @@
   remote_user: ansible
   gather_facts: false
   become: true
-  vars: 
+  vars:
     container_name: grafana
     destination: /home/greg/projects/ansible_proxmox/roles/docker_container/files/grafana.ini
     source: /etc/grafana/grafana.ini
@@ -70,7 +70,7 @@
   remote_user: ansible
   gather_facts: false
   become: true
-  vars: 
+  vars:
     destination: /home/greg/projects/ansible_proxmox/roles/docker_container/files/prometheus.yml
     source: /opt/prometheus.yml
     tar_name: ''
@@ -144,6 +144,22 @@
   roles:
     - backup
   tags: graylog
+
+- name: Back up homepage volume
+  hosts: docker
+  remote_user: ansible
+  gather_facts: false
+  become: true
+  vars:
+    destination: /home/greg/projects/ansible_proxmox/roles/homepage/files/
+    source: /opt
+    tar_name: homepage.tar
+    folder_name: homepage
+    container_name: ''
+    type: folder
+  roles:
+    - backup
+  tags: homepage
 
 # - name: Back up authentik database volume
 #   hosts: docker

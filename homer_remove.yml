@@ -1,3 +1,5 @@
+---
+
 - name: Delete LXC
   hosts: proxmox
   become: true

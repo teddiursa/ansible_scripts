@@ -5,12 +5,12 @@
     user: ansible
     key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINOJj6Bi27ocohN68teE3yeu5ABXGbdxxySwiFvnOqiB ansible"
 
-- name: generate sshd_config file from template
+- name: Generate sshd_config file from template
   tags: ssh
-  template:
+  ansible.builtin.template:
     src: "{{ ssh_template_file }}"
     dest: /etc/ssh/sshd_config
     owner: root
     group: root
-    mode: 0644
+    mode: "0644"
   notify: restart_sshd

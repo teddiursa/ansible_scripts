@@ -16,7 +16,8 @@
   when: vm_status.rc != 0 and 'already exists' in vm_status.stderr
 
 - name: Create new Virtual Machine
-  block: 
+  when: vm_status.rc == 0 and 'already exists' not in vm_status.stderr
+  block:
     - name: Without vlan id
       community.general.proxmox_kvm:
         vmid: "{{ vmid }}"
@@ -70,7 +71,6 @@
         features: "{{ features }}"
         unprivileged: "{{ unprivileged }}"
       when: vlan is defined
-  when: vm_status.rc == 0 and 'already exists' not in vm_status.stderr
 
 - name: Start the VM
   community.general.proxmox_kvm:

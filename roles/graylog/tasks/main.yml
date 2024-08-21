@@ -35,6 +35,7 @@
   when: not restore
 
 - name: Restore backup configuration
+  when: restore
   block:
     - name: Install tar
       ansible.builtin.apt:
@@ -84,4 +85,3 @@
         chdir: /home/ansible/graylog
         cmd: docker compose up -d
       changed_when: true
-  when: restore

@@ -2,7 +2,7 @@
 # Creates a docker container with provided image and settings
 # If a backup is provided, loads it as a docker volume
 
-- name: Pull {{ image }}:{{ image_tag }}
+- name: Pull {{ image }}:{{ image_tag }} # noqa: name[template]
   community.docker.docker_image:
     name: "{{ image }}"
     tag: "{{ image_tag }}"
@@ -41,53 +41,53 @@
   when: not volumes
 
 - name: Install container dependencies
-  block:  
-  - name: Update container package register
-    ansible.builtin.command:
-      cmd: 'docker exec {{ container_name }} /bin/bash -c "apt-get update"'
-    changed_when: true
-
-  - name: Install dependencies
-    ansible.builtin.command:
-      cmd: 'docker exec {{ container_name }} /bin/bash -c "apt-get install -y {{ container_deps | join(" ") }}"'
-    changed_when: true
   when: container_deps is defined
+  block:
+    - name: Update container package register
+      ansible.builtin.command:
+        cmd: 'docker exec {{ container_name }} /bin/bash -c "apt-get update"'
+      changed_when: true
+
+    - name: Install dependencies
+      ansible.builtin.command:
+        cmd: 'docker exec {{ container_name }} /bin/bash -c "apt-get install -y {{ container_deps | join(" ") }}"'
+      changed_when: true
 
 - name: Load backup volume
-  block:
-  - name: Stop container to load backup
-    community.docker.docker_container:
-      name: "{{ container_name }}"
-      state: stopped
-
-  - name: Remove old container volume
-    ansible.builtin.file:
-      path: '/var/lib/docker/volumes/{{ container_name }}'
-      state: absent
-
-  - name: Install tar
-    ansible.builtin.apt:
-      name: tar
-
-  # Archived volumes are in docker_container files folder
-  - name: Unzip container backup tar
-    ansible.builtin.unarchive:
-      src: '/home/greg/ansible_proxmox/roles/docker_container/files/{{ archive_name }}'
-      dest: /var/lib/docker/volumes/
-    changed_when: true
-
-  - name: Restart container
-    community.docker.docker_container:
-      name: "{{ container_name }}"
-      image: "{{ image }}"
-      state: started
-      volumes:
-        - "{{ item.key }}:{{ item.value }}"
-      ports: "{{ container_ports }}"
-      working_dir: "{{ container_workdir }}"
-      env: "{{ container_env }}"
-      networks:
-        - name: "{{ network_name }}"
-      restart_policy: unless-stopped
-    loop: "{{ volumes | dict2items }}"
   when: archive_name is defined
+  block:
+    - name: Stop container to load backup
+      community.docker.docker_container:
+        name: "{{ container_name }}"
+        state: stopped
+
+    - name: Remove old container volume
+      ansible.builtin.file:
+        path: '/var/lib/docker/volumes/{{ container_name }}'
+        state: absent
+
+    - name: Install tar
+      ansible.builtin.apt:
+        name: tar
+
+    # Archived volumes are in docker_container files folder
+    - name: Unzip container backup tar
+      ansible.builtin.unarchive:
+        src: '/home/greg/ansible_proxmox/roles/docker_container/files/{{ archive_name }}'
+        dest: /var/lib/docker/volumes/
+      changed_when: true
+
+    - name: Restart container
+      community.docker.docker_container:
+        name: "{{ container_name }}"
+        image: "{{ image }}"
+        state: started
+        volumes:
+          - "{{ item.key }}:{{ item.value }}"
+        ports: "{{ container_ports }}"
+        working_dir: "{{ container_workdir }}"
+        env: "{{ container_env }}"
+        networks:
+          - name: "{{ network_name }}"
+        restart_policy: unless-stopped
+      loop: "{{ volumes | dict2items }}"

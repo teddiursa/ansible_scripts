@@ -1,37 +1,60 @@
 ---
-# Role to install and configure snmpd for snmp v1 and v2c
+# Role to install and configure snmpd for snmp v2c or v3
+
 
 # Required variables:
 # contact
 # location
-# snmp_community
 
-# Optional variables:
-# extra_arguments
+#   for v2c:
+#     snmp_community
+
+#   for v3:
+#     v3: true
+#     auth_phrase
+#     priv_phrase
+#     username
+#     auth_level
+
+#   for traps (v2):
+#      snmp_community
+#      server_ip
+
+# Currently does not work for Alpine (no smpd module)
 
 - name: Install and configure snmpd
+  when: ansible_distribution  != "Alpine"
   block:
     - name: Install snmpd
-      package:
+      ansible.builtin.package:
         name: snmpd
         state: present
 
-    - name: Configure snmpd
-      template:
+    - name: Configure snmpd for snmp v2c
+      ansible.builtin.template:
         src: ~/projects/ansible_proxmox/roles/snmp/files/snmpd.j2
         dest: /etc/snmp/snmpd.conf
         mode: '0644'
+      when: v3 is not true
+
+
+    - name: Configure snmpd for snmp v3
+      ansible.builtin.template:
+        src: ~/projects/ansible_proxmox/roles/snmp/files/snmpdv3.j2
+        dest: /etc/snmp/snmpd.conf
+        mode: '0644'
+      when: v3 is true
+
 
     - name: Append extra arguments to snmpd.conf
-      lineinfile:
+      ansible.builtin.lineinfile:
         path: /etc/snmp/snmpd.conf
         line: "{{ item }}"
         insertafter: EOF
       with_items: "{{ extra_arguments }}"
       when: extra_arguments is defined
 
-    - name: restart snmpd
-      service:
+    - name: Restart snmpd
+      ansible.builtin.service:
         name: snmpd
         state: restarted
-

@@ -2,13 +2,12 @@
 
 - name: Install python3
   ansible.builtin.package:
-    name: python3 
+    name: python3
     state: present
 
-- name: Ensure python3 is at the latest version
-  ansible.builtin.package:
-    name: python3 
-    state: latest
+- name: Update
+  community.general.apt:
+    update-cache: true
 
 - name: Create website var directory
   ansible.builtin.file:
@@ -54,3 +53,4 @@
   ansible.builtin.shell: nohup python3 /var/website/start_server.py > /dev/null 2>&1 &
   args:
     executable: /bin/bash
+  changed_when: true

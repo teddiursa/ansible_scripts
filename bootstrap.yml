@@ -1,16 +1,30 @@
 ---
 
+# Bootstrap all servers, by default only adds MOTD
+
+# # Try basic login for machines with basic credentials
+# - name: Run bootstrap role
+#   hosts: all
+#   vars_files:
+#     - group_vars/basic.yml
+#   vars:
+#     update: true
+#   roles:
+#     - bootstrap
+
 - name: Update servers
   hosts: all
-  # become: true
+  become: true
   tasks:
     - name: Run updates
       tags: always
       ansible.builtin.package:
         update_cache: true
 
-- name: Boostrap servers
+- name: Bootstrap servers
   hosts: all
+  vars:
+    update: false # Change to true to add users and set NTP
   roles:
     - bootstrap
 
@@ -23,24 +37,3 @@
     syslog_server_ip: 192.168.65.50
   roles:
     - syslog_client
-
-# - name: Set up server for ansible
-#   hosts: all
-#   become: true
-#   tasks:
-#     - name: Create user ansible
-#       ansible.builtin.user:
-#         name: ansible
-#         groups: root
-#     - name: Add ssh key for test ansible
-#       ansible.posix.authorized_key:
-#         user: ansible
-#         key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINOJj6Bi27ocohN68teE3yeu5ABXGbdxxySwiFvnOqiB ansible"
-#         # pub key
-#     - name: Add sudoers file for ansible user
-#       ansible.builtin.copy:
-#         src: sudoer_ansible
-#         dest: /etc/sudoers.d/ansible
-#         owner: root
-#         group: root
-#         mode: '0440'

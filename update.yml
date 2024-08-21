@@ -1,9 +1,47 @@
 ---
 
-- hosts: all
+# - name: Run update with basic login
+#   hosts: all
+#   become: true
+#   vars_files:
+#     - group_vars/basic.yml
+#   tasks:
+#   - name: Update Debian-based Systems
+#     when: ansible_os_family == 'Debian'
+#     apt:
+#       update_cache: yes
+#       upgrade: dist
+
+#   - name: Update RHEL-based Systems
+#     when: ansible_os_family == 'RedHat'
+#     yum:
+#       name: '*'
+#       state: latest
+
+#   - name: Update Alpine-based Systems
+#     when: ansible_os_family == 'Alpine'
+#     apk:
+#       update_cache: yes
+#       upgrade: yes
+
+- name: Run update with ansible login
+  hosts: all
   become: true
   tasks:
-
-  - name: run apt update
+  - name: Update Debian-based Systems
+    when: ansible_os_family == 'Debian'
     apt:
-      update-cache: yes
+      update_cache: yes
+      upgrade: dist
+
+  - name: Update RHEL-based Systems
+    when: ansible_os_family == 'RedHat'
+    yum:
+      name: '*'
+      state: latest
+
+  - name: Update Alpine-based Systems
+    when: ansible_os_family == 'Alpine'
+    apk:
+      update_cache: yes
+      upgrade: yes

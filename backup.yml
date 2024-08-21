@@ -10,7 +10,7 @@
     source: '/var/lib'
     tar_name: plex.tar
     folder_name: plexmediaserver
-    exclude_folders: 
+    exclude_folders:
       - "'/var/lib/plexmediaserver/Library/Application Support/Plex Media Server/Cache'"
       - "'/var/lib/plexmediaserver/Library/Application Support/Plex Media Server/Logs'"
     container_name: ''

@@ -11,3 +11,6 @@ node-id
 prometheus.yml
 .*
 *.env
+test.yml
+notes
+roles/homepage/files/homepage_backup/*

@@ -1,74 +1,87 @@
 ---
-# Uses type variable to determine if it's a file or folder and if it's on a docker container 
+
+# Uses type variable to determine if it's a file or folder and if it's on a docker container
 
 - name: Backup Docker file
-  block:
-  - name: Copy file from Docker container to temporary directory
-    ansible.builtin.shell: "docker cp {{ container_name }}:{{ source }} /tmp"
-
-  - name: Move file from temporary directory to destination
-    ansible.builtin.fetch:
-      src: "/tmp/{{ source | basename }}"
-      dest: "{{ destination }}"
-      flat: true
   when: type == 'docker_file'
+  block:
+      - name: Copy file from Docker container to temporary directory # noqa: command-instead-of-shell
+        ansible.builtin.shell: "docker cp {{ container_name }}:{{ source }} /tmp"
+        changed_when: true
+
+      - name: Move file from temporary directory to destination
+        ansible.builtin.fetch:
+            src: "/tmp/{{ source | basename }}"
+            dest: "{{ destination }}"
+            flat: true
 
 - name: Backup Docker Folder
-  block:
-  - name: Create tarball of directory in Docker container
-    community.docker.docker_container_exec:
-      container: "{{ container_name }}"
-      command: "tar -czf /tmp/folder.tar -C {{ source }} ."
-
-  - name: Copy tarball from Docker container to temporary directory
-    ansible.builtin.shell: "docker cp {{ container_name }}:/tmp/folder.tar /tmp"
-
-  - name: Extract tarball to destination
-    ansible.builtin.fetch:
-      src: "/tmp/folder.tar"
-      dest: "{{ destination }}"
-      flat: true
-
-  - name: Clean up temporary directory
-    ansible.builtin.file:
-      path: "/tmp/folder.tar"
-      state: absent
   when: type == 'docker_folder'
+  block:
+      - name: Create tarball of directory in Docker container
+        community.docker.docker_container_exec:
+            container: "{{ container_name }}"
+            command: "tar -czf /tmp/folder.tar -C {{ source }} ."
 
+      - name: Copy tarball from Docker container to temporary directory # noqa: command-instead-of-shell
+        ansible.builtin.shell: "docker cp {{ container_name }}:/tmp/folder.tar /tmp"
+        changed_when: true
+
+      - name: Extract tarball to destination
+        ansible.builtin.fetch:
+            src: "/tmp/folder.tar"
+            dest: "{{ destination }}"
+            flat: true
+
+      - name: Clean up temporary directory
+        ansible.builtin.file:
+            path: "/tmp/folder.tar"
+            state: absent
 
 - name: Backup file
+  when: type == 'file'
   block:
-  - name: Fetch file from remote host to local machine
-    ansible.builtin.fetch:
-      src: "{{ source }}"
-      dest: "{{ destination }}"
-      flat: yes
-    when: type == 'file'
+      - name: Fetch file from remote host to local machine
+        ansible.builtin.fetch:
+            src: "{{ source }}"
+            dest: "{{ destination }}"
+            flat: true
+
 
 - name: Backup Folder
-  block:
-  # - name: Archive the Remote directory
-  #   ansible.builtin.command:
-  #     cmd: tar --exclude='*.log' --exclude='*.0*' -czf /tmp/{{ tar_name }} -C {{ source }} {{ folder_name }}
-
-  - name: Archive the Remote directory with exclude
-    ansible.builtin.command:
-      cmd: tar --exclude='*.log' --exclude='*.0*' {% for folder in exclude_folders %} --exclude={{ folder }} {% endfor %} -czf /tmp/{{ tar_name }} -C {{ source }} {{ folder_name }}
-    when: exclude_folders is defined
-
-  - name: Archive the Remote directory without exclude
-    ansible.builtin.command:
-      cmd: tar --exclude='*.log' --exclude='*.0*' -czf /tmp/{{ tar_name }} -C {{ source }} {{ folder_name }}
-    when: exclude_folders is not defined
-
-  - name: Copy Archive
-    ansible.builtin.fetch:
-      src: /tmp/{{ tar_name }}
-      dest: "{{ destination}}"
-      flat: true
-
-  - name: Remove temporary archive on localhost
-    ansible.builtin.file:
-      path: /tmp/{{ tar_name }}
-      state: absent
   when: type == 'folder'
+  block:
+      # - name: Archive the Remote directory
+      #   ansible.builtin.command:
+      #     cmd: tar --exclude='*.log' --exclude='*.0*' -czf /tmp/{{ tar_name }} -C {{ source }} {{ folder_name }}
+
+      - name: Archive the Remote directory with exclude # noqa: command-instead-of-module
+        ansible.builtin.command:
+            cmd: >
+              tar --exclude='*.log' --exclude='*.0*'
+              {% for folder in exclude_folders %}
+              --exclude={{ folder }}
+              {% endfor %}
+              -czf /tmp/{{ tar_name }} -C {{ source }} {{ folder_name }}
+        changed_when: true
+        when: exclude_folders is defined
+
+
+      - name: Archive the Remote directory without exclude # noqa: command-instead-of-module
+        ansible.builtin.command:
+            cmd: >
+              tar --exclude='*.log' --exclude='*.0*'
+              -czf /tmp/{{ tar_name }} -C {{ source }} {{ folder_name }}
+        changed_when: true
+        when: exclude_folders is not defined
+
+      - name: Copy Archive
+        ansible.builtin.fetch:
+            src: /tmp/{{ tar_name }}
+            dest: "{{ destination }}"
+            flat: true
+
+      - name: Remove temporary archive on localhost
+        ansible.builtin.file:
+            path: /tmp/{{ tar_name }}
+            state: absent

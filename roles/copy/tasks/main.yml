@@ -1,5 +1,5 @@
 ---
-# Generic copy role 
+# Generic copy role
 # Allows for remote or local sources using mode variable
 
 - name: Copy file with owner and permissions

@@ -15,34 +15,20 @@
   ansible.builtin.apt:
     deb: https://downloads.plex.tv/plex-media-server-new/1.32.8.7639-fb6452ebf/debian/plexmediaserver_1.32.8.7639-fb6452ebf_amd64.deb
   register: plex_installed
+  notify:
+    - Start plex service
+    - Stop plex service
+    - Remove old data
 
-- name: Start plex service
-  ansible.builtin.service:
-    name: plexmediaserver
-    state: started
-  when: plex_installed.changed
-
-- name: Stop plex service
-  ansible.builtin.service:
-    name: plexmediaserver
-    state: stopped
-  when: plex_installed.changed
-
-- name: Remove old data
-  ansible.builtin.file:
-    path: '/var/lib/plexmediaserver'
-    state: absent
-  when: plex_installed.changed
-
-- name: Install gzip and gpg 
+- name: Install gzip and gpg
   ansible.builtin.apt:
-    name: 
+    name:
       - gzip
       - gnupg
 
 # Only restores backup when first installed
 # Rather large file, even withouth cached folder
-- name: Unzip config data
+- name: Unzip config data # noqa: no-handler
   ansible.builtin.unarchive:
     src: '/home/greg/projects/ansible_proxmox/roles/plex/files/plex.tar'
     dest: '/var/lib'
@@ -73,6 +59,7 @@
   ansible.builtin.copy:
     src: /home/greg/projects/ansible_proxmox/roles/plex/files/repo.j2
     dest: /etc/apt/sources.list.d/plexmediaserver.list
+    mode: "644"
 
 - name: Import PlexSign.key
   ansible.builtin.apt_key:
@@ -102,7 +89,7 @@
 
 - name: Install necessary packages for hardware acceleration
   ansible.builtin.apt:
-    name: 
+    name:
       - vainfo
       - intel-media-va-driver
       - i965-va-driver
@@ -114,6 +101,7 @@
     cmd: |
       usermod -aG video plex
       echo 'SUBSYSTEM=="drm", KERNEL=="renderD*", GROUP="video", MODE="0660"' > /etc/udev/rules.d/99-plex.rules
+  changed_when: true
 
 - name: Restart the system to apply changes
   ansible.builtin.reboot:
