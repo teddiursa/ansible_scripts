@@ -1,5 +1,8 @@
 ---
 
+# Runs updates on all hosts
+# Supports Debian, redhat, and alpine
+
 # - name: Run update with basic login
 #   hosts: all
 #   become: true

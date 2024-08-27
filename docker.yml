@@ -1,7 +1,10 @@
 ---
 
-# Creates docker container, run, and load their backups.
+# Creates docker container and loads their backups.
 # NOTE: requires root for LXC options needed for docker
+
+# Primarily uses docker_container role
+# Has separate role for some containers that use Docker-compose
 
 - name: Create LXC for docker
   hosts: proxmox

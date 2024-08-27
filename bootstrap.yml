@@ -2,16 +2,6 @@
 
 # Bootstrap all servers, by default only adds MOTD
 
-# # Try basic login for machines with basic credentials
-# - name: Run bootstrap role
-#   hosts: all
-#   vars_files:
-#     - group_vars/basic.yml
-#   vars:
-#     update: true
-#   roles:
-#     - bootstrap
-
 - name: Update servers
   hosts: all
   become: true

@@ -1,5 +1,10 @@
 ---
 
+# Creates LXC and installs plex media server
+# Loads backup configuration
+
+# https://www.plex.tv
+
 - name: Create LXC for plex
   hosts: proxmox
   become: true

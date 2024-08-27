@@ -1,6 +1,7 @@
 ---
 
-# General remove play
+# General remove play, using a list of vim IDs
+
 # usage:
 # ansible-playbook remove.yml --extra-var "vimids=[<vimid>... ,<vimid2>]"
 
