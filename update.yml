@@ -28,20 +28,20 @@
   hosts: all
   become: true
   tasks:
-  - name: Update Debian-based Systems
-    when: ansible_os_family == 'Debian'
-    apt:
-      update_cache: yes
-      upgrade: dist
+    - name: Update Debian-based Systems
+      when: ansible_os_family == 'Debian'
+      ansible.builtin.apt:
+        update_cache: true
+        upgrade: dist
 
-  - name: Update RHEL-based Systems
-    when: ansible_os_family == 'RedHat'
-    yum:
-      name: '*'
-      state: latest
+    - name: Update RHEL-based Systems # noqa: package-latest
+      when: ansible_os_family == 'RedHat'
+      ansible.builtin.yum:
+        name: '*'
+        state: latest
 
-  - name: Update Alpine-based Systems
-    when: ansible_os_family == 'Alpine'
-    apk:
-      update_cache: yes
-      upgrade: yes
+    - name: Update Alpine-based Systems
+      when: ansible_os_family == 'Alpine'
+      community.general.apk:
+        update_cache: true
+        upgrade: true

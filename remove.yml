@@ -1,7 +1,11 @@
 ---
 
-# usage
+# General remove play
+# usage:
 # ansible-playbook remove.yml --extra-var "vimids=[<vimid>... ,<vimid2>]"
+
+# or bash script:
+# remove.sh <vimid1> [vimid2 ...]
 
 - name: Delete LXC
   hosts: proxmox

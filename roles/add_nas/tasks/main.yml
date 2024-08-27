@@ -21,8 +21,8 @@
   ansible.builtin.template:
     src: nas_credentials.j2
     dest: /etc/nas_credentials
-    owner: root
-    group: root
+    owner: ansible
+    group: ansible
     mode: '0600'
   vars:
     nas_user: "{{ nas_username }}"

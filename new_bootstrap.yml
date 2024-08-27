@@ -1,0 +1,42 @@
+---
+
+# Role to bootstrap a new host
+
+# usage:
+# ansible-playbook new_bootstrap.yml --extra-var "host=<host>"
+
+# Optionally add nas with:
+# ansible-playbook new_bootstrap.yml --extra-var "host=<host>,nas=true"
+# Note: must be privileged lxc to add nas
+
+- name: Bootstrap new host {{ host }}
+  hosts: "{{ host | default('localhost') }}"
+  vars_files:
+    - group_vars/basic.yml
+  vars:
+    update: true
+  roles:
+    - bootstrap
+
+- name: Add syslog
+  hosts: "{{ host | default('localhost') }}"
+  remote_user: ansible
+  gather_facts: false
+  become: true
+  vars:
+    syslog_server_ip: 192.168.65.50
+  roles:
+    - syslog_client
+
+- name: Add nas to host
+  hosts: "{{ host | default('localhost') }}"
+  remote_user: ansible
+  gather_facts: false
+  become: true
+  vars_files:
+    - group_vars/proxmox.yml
+  tasks:
+    - name: Include add_nas role
+      ansible.builtin.include_role:
+        name: add_nas
+      when: nas | default(false)
