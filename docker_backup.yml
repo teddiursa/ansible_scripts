@@ -1,8 +1,14 @@
 ---
-# Backs up current docker container files, as tar
+# Backs up current docker container files, as tar file
 # WARNING: WILL DELETE PREVIOUS BACKUP FILES
 
 # Has tags if you just want to backup certain containers
+
+# Usage:
+# ansible-playbook docker_backup.yml [-t <tag>]
+
+# Mostly backs up docker volumes
+# Some back up individual files, such as grafana and prometheus
 
 - name: Back up nginx lets encrypt
   hosts: docker
@@ -81,7 +87,7 @@
     - backup
   tags: prometheus
 
-- name: Back up UTK folder
+- name: Back up UTK volume
   hosts: docker
   remote_user: ansible
   gather_facts: false

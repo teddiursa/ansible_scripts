@@ -1,6 +1,6 @@
 ---
 
-# Installs SNMP v2c or v3 agents on hosts
+# Installs SNMP v3 agents on hosts
 
 # Required variables:
 # contact

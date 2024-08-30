@@ -90,6 +90,11 @@
         user: greg
         commands: ALL
 
+    - name: Add ssh key for greg user
+      ansible.posix.authorized_key:
+        user: greg
+        key: "{{ vault.public_key }}"
+
     - name: Set virtualization type variable
       ansible.builtin.set_fact:
         is_container: "'lxc' in ansible_processor_virt_type|default('')"

@@ -22,7 +22,7 @@ INTERFACE_NAME=$(ip -o link show | awk -F': ' '{print $2}' | grep -E '^eth0|^ens
 
 # Get the IP address for the interface and remove CIDR suffix
 # Removes loopback address if present
-IP_ADDRESS=$(ip a show $INTERFACE_NAME | awk '/inet /{print $2}' | cut -d "/" -f 1 | grep -V '127.0.0.1')
+IP_ADDRESS=$(ip a show $INTERFACE_NAME | awk '/inet /{print $2}' | cut -d "/" -f 1 | grep -v '127.0.0.1')
 
 # Get the distribution name
 DISTRO=$(grep '^PRETTY_NAME=' /etc/os-release | cut -d'"' -f2)

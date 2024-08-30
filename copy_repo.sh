@@ -8,7 +8,7 @@ rsync -av --progress ~/projects/ansible_proxmox/ ~/projects/ansible_scripts/ --e
 #!/bin/bash
 
 # List of files to remove
-files=("notes" "AD_remove.yml" "AD.yml" "ansible.cfg" "create_role.sh" "inventory.yml" "jellyfin_remove.yml" "jellyfin.yml" "roles.yml" "test.yml" "tftp_remove.yml" "tftp.yml" "TODO" "smallstep.yml" "eve.yml" )
+files=("notes" "AD_remove.yml" "AD.yml" "ansible.cfg" "create_role.sh" "inventory.yml" "jellyfin_remove.yml" "jellyfin.yml" "roles.yml" "test.yml" "tftp_remove.yml" "tftp.yml" "TODO" "smallstep.yml" "eve.yml" "grafan.ini" "grafana.db" )
 
 # Loop over the array and remove each file
 for file in "${files[@]}"

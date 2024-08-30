@@ -4,8 +4,6 @@ TODO
 group_vars/
 *.tar
 *.zip
-*.db
-*.ini
 graylog.conf
 node-id
 prometheus.yml
